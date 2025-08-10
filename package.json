@@ -1,0 +1,40 @@
+{
+  "name": "my-edu-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "prisma": "prisma",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "0.17.6",
+    "@heroicons/react": "^2.2.0",
+    "@prisma/client": "^5.17.0",
+    "autoprefixer": "10.4.20",
+    "bcryptjs": "2.4.3",
+    "framer-motion": "^12.23.12",
+    "next": "14.2.5",
+    "next-auth": "4.24.7",
+    "postcss": "8.4.41",
+    "prisma": "5.17.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "socket.io": "4.7.5",
+    "socket.io-client": "4.7.5",
+    "swr": "2.2.5",
+    "tailwindcss": "3.4.10",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "ts-node": "10.9.2",
+    "typescript": "5.5.4"
+  }
+}
