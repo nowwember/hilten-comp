@@ -95,7 +95,7 @@ export default function Tasks() {
               return (order[a.difficulty] - order[b.difficulty]) * (sort === 'difficulty-asc' ? 1 : -1);
             }).map((t: any) => (
               <motion.div key={t.id} variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}>
-                <Link href={`/tasks/${t.id}`} className="block card border p-5 hover:shadow-soft hover:-translate-y-0.5 transition-transform">
+                <Link href={{ pathname: `/tasks/${t.id}`, query: { id: t.id } }} className="block card border p-5 hover:shadow-soft hover:-translate-y-0.5 transition-transform">
                   <div className="flex items-center justify-between gap-4">
                     <div className="font-medium text-lg flex-1">{t.title}</div>
                     {t.solved && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md">Решено</span>}

@@ -8,9 +8,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const {
     task,
     messages,
+    solution,
   }: {
     task: { id: string; title: string; topic: string; difficulty: string; content: string };
     messages?: ChatMessage[];
+    solution?: string;
   } = req.body || {};
 
   if (!task?.id || !task?.content) {
@@ -22,21 +24,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'OPENAI_API_KEY is not configured on server' });
   }
 
-  const systemPrompt = `Ты — математический ассистент. Реши задачу, которую я тебе пришлю, пошагово и максимально понятно. 
-Отвечай только по этой задаче (id=${task.id}, тема=${task.topic}, сложность=${task.difficulty}). 
-Если вопрос не по теме этой задачи — отвечай: "Я могу отвечать только по этой задаче".`;
+  const systemPrompt = `Ты — математический ассистент. Перед тобой задача, которую нужно решить и объяснить пошагово.
+Отвечай строго по этой задаче и её решению. Если вопрос напрямую связан с задачей — отвечай подробно.
+Если вопрос не связан с задачей, напиши: "Я могу отвечать только по этой задаче".`;
 
   const seedUser = `Задача (id=${task.id}): ${task.title}\n\nУсловие: ${task.content}`;
 
-  // Если в запросе нет истории сообщений — добавляем стартовое пользовательское
-  const history: ChatMessage[] =
-    Array.isArray(messages) && messages.length > 0
-      ? messages
-      : [{ role: 'user' as const, content: seedUser }];
+  // Off-topic guard: только для последнего пользовательского сообщения
+  if (Array.isArray(messages) && messages.length > 0) {
+    const last = [...messages].reverse().find((m) => m.role === 'user');
+    if (last) {
+      const base = `${task.content} ${solution || ''}`.toLowerCase();
+      const words = Array.from(new Set(base.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3)));
+      const text = last.content.toLowerCase();
+      const related = words.some((w) => text.includes(w));
+      if (!related) {
+        return res.status(200).json({ message: { role: 'assistant', content: 'Я могу отвечать только по этой задаче' } });
+      }
+    }
+  }
 
+  // Первая инициализация: без history — просим пошаговое объяснение по условию.
+  // Дальнее: включаем условие и ранее сгенерированное решение в контекст.
   const chat: ChatMessage[] = [
     { role: 'system' as const, content: systemPrompt },
-    ...history,
+    ...(Array.isArray(messages) && messages.length > 0
+      ? [{ role: 'user' as const, content: `${seedUser}${solution ? `\n\nРанее сгенерированное решение: ${solution}` : ''}` }, ...messages]
+      : [{ role: 'user' as const, content: seedUser }])
   ];
 
   try {

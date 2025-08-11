@@ -74,7 +74,8 @@ export default function TaskPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         task: { id: task.id, title: task.title, topic: task.topic, difficulty: task.difficulty, content: task.content },
-        messages: next
+        messages: next,
+        solution: chat.find((m) => m.role === 'assistant')?.content || ''
       })
     });
     const j = await res.json().catch(() => ({}));
@@ -113,7 +114,7 @@ export default function TaskPage() {
         ) : (
           <>
             <div className="space-y-3 card border p-6 shadow-sm">
-              <button onClick={() => push('/tasks')} className="text-sm inline-flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-slate-900/5 dark:hover:bg-white/5 transition">
+              <button onClick={() => push({ pathname: '/tasks', query: { id } })} className="text-sm inline-flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-slate-900/5 dark:hover:bg-white/5 transition">
                 ← Назад
               </button>
               <div className="text-sm text-slate-500">{task.topic} · {task.difficulty}</div>
