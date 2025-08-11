@@ -5,12 +5,22 @@ type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { task, messages }: { task: { id: string; title: string; topic: string; difficulty: string; content: string }; messages?: ChatMessage[] } =
-    req.body || {};
-  if (!task?.id || !task?.content) return res.status(400).json({ error: 'Missing task payload' });
+  const {
+    task,
+    messages,
+  }: {
+    task: { id: string; title: string; topic: string; difficulty: string; content: string };
+    messages?: ChatMessage[];
+  } = req.body || {};
+
+  if (!task?.id || !task?.content) {
+    return res.status(400).json({ error: 'Missing task payload' });
+  }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'OPENAI_API_KEY is not configured on server' });
+  if (!apiKey) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY is not configured on server' });
+  }
 
   const systemPrompt = `Ты — математический ассистент. Реши задачу, которую я тебе пришлю, пошагово и максимально понятно. 
 Отвечай только по этой задаче (id=${task.id}, тема=${task.topic}, сложность=${task.difficulty}). 
@@ -18,10 +28,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const seedUser = `Задача (id=${task.id}): ${task.title}\n\nУсловие: ${task.content}`;
 
+  // Если в запросе нет истории сообщений — добавляем стартовое пользовательское
+  const history: ChatMessage[] =
+    Array.isArray(messages) && messages.length > 0
+      ? messages
+      : [{ role: 'user' as const, content: seedUser }];
+
   const chat: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
-    ...(Array.isArray(messages) && messages.length > 0 ? [] : [{ role: 'user', content: seedUser }]),
-    ...(Array.isArray(messages) ? messages : [])
+    { role: 'system' as const, content: systemPrompt },
+    ...history,
   ];
 
   try {
@@ -29,13 +44,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: chat.map((m) => ({ role: m.role, content: m.content })),
-        temperature: 0.2
-      })
+        temperature: 0.2,
+      }),
     });
 
     if (!response.ok) {
@@ -50,5 +65,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'OpenAI error', detail: e?.message || String(e) });
   }
 }
-
-
