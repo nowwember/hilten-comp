@@ -14,7 +14,8 @@ export default function TaskPage() {
   const [result, setResult] = useState<null | { isCorrect: boolean }>(null);
   const [error, setError] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
-  const [chat, setChat] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  type ChatMessage = { role: 'user' | 'assistant'; content: string };
+  const [chat, setChat] = useState<ChatMessage[]>([]);
   const storageKey = id ? `task_chat_${id}` : '';
 
   const submissionKey = useMemo(() => (id ? `/api/submissions?taskId=${id}` : null), [id]);
@@ -29,7 +30,7 @@ export default function TaskPage() {
     if (!id) return;
     try {
       const raw = localStorage.getItem(storageKey);
-      if (raw) setChat(JSON.parse(raw));
+      if (raw) setChat(JSON.parse(raw) as ChatMessage[]);
     } catch {}
   }, [id]);
 
@@ -64,8 +65,8 @@ export default function TaskPage() {
     const f = new FormData(e.currentTarget);
     const message = String(f.get('message') || '').trim();
     if (!message) return;
-    const next = [...chat, { role: 'user', content: message }];
-    setChat(next);
+    const next: ChatMessage[] = [...chat, { role: 'user', content: message }];
+    setChat(next as ChatMessage[]);
     (e.currentTarget as HTMLFormElement).reset();
 
     const res = await fetch('/api/task-explanation', {
@@ -78,7 +79,7 @@ export default function TaskPage() {
     });
     const j = await res.json().catch(() => ({}));
     const content = j?.message?.content || 'Я могу отвечать только по этой задаче.';
-    setChat((prev) => [...prev, { role: 'assistant', content }]);
+    setChat((prev) => [...prev, { role: 'assistant', content }] as ChatMessage[]);
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
