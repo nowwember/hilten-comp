@@ -14,6 +14,8 @@ export default function TaskPage() {
   const [result, setResult] = useState<null | { isCorrect: boolean }>(null);
   const [error, setError] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [chat, setChat] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const storageKey = id ? `task_chat_${id}` : '';
 
   const submissionKey = useMemo(() => (id ? `/api/submissions?taskId=${id}` : null), [id]);
   const { data: latestSubmission } = useSWR(submissionKey, fetcher);
@@ -21,6 +23,63 @@ export default function TaskPage() {
   useEffect(() => {
     if (latestSubmission) setResult({ isCorrect: latestSubmission?.isCorrect ?? false });
   }, [latestSubmission]);
+
+  // hydrate chat from storage
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) setChat(JSON.parse(raw));
+    } catch {}
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(chat));
+    } catch {}
+  }, [chat, id]);
+
+  async function openAIChat() {
+    if (!task) return;
+    setAiOpen(true);
+    if (chat.length > 0) return; // already loaded
+    // request initial explanation
+    const res = await fetch('/api/task-explanation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: { id: task.id, title: task.title, topic: task.topic, difficulty: task.difficulty, content: task.content } })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j?.message?.content) {
+      setChat([{ role: 'assistant', content: j.message.content }]);
+    } else {
+      setChat([{ role: 'assistant', content: 'Не удалось получить объяснение от ИИ.' }]);
+    }
+  }
+
+  async function onSendAIMessage(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!task) return;
+    const f = new FormData(e.currentTarget);
+    const message = String(f.get('message') || '').trim();
+    if (!message) return;
+    const next = [...chat, { role: 'user', content: message }];
+    setChat(next);
+    (e.currentTarget as HTMLFormElement).reset();
+
+    const res = await fetch('/api/task-explanation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task: { id: task.id, title: task.title, topic: task.topic, difficulty: task.difficulty, content: task.content },
+        messages: next
+      })
+    });
+    const j = await res.json().catch(() => ({}));
+    const content = j?.message?.content || 'Я могу отвечать только по этой задаче.';
+    setChat((prev) => [...prev, { role: 'assistant', content }]);
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -65,7 +124,7 @@ export default function TaskPage() {
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div className="flex items-center gap-3">
                 <button className="py-3 px-5 rounded-xl text-white gradient-accent shadow-soft">Проверить</button>
-                <button type="button" onClick={() => setAiOpen(true)} className="py-3 px-5 rounded-xl border hover:bg-slate-900/5 dark:hover:bg-white/5 transition">Объяснение от ИИ</button>
+                <button type="button" onClick={openAIChat} className="py-3 px-5 rounded-xl border hover:bg-slate-900/5 dark:hover:bg-white/5 transition">Объяснение от ИИ</button>
               </div>
               {result && (
                 <p className={result.isCorrect ? 'text-green-600' : 'text-red-600'}>
@@ -81,32 +140,18 @@ export default function TaskPage() {
                     <div className="font-medium">Объяснение от ИИ</div>
                     <button className="text-sm underline" onClick={() => setAiOpen(false)}>Закрыть</button>
                   </div>
-                  <div className="text-sm text-slate-500 py-2">Пока что это заглушка. В будущем сюда подключим модель и будем подмешивать контекст текущей задачи.</div>
-                  <div className="flex-1 overflow-auto space-y-2" id="ai-chat-log">
-                    <div className="text-sm p-2 bg-slate-50 dark:bg-slate-900">Подсказать ход решения? Опишите, где застряли.</div>
+                  <div className="flex-1 overflow-auto space-y-2">
+                    {chat.length === 0 ? (
+                      <div className="text-sm p-2 bg-slate-50 dark:bg-slate-900">Запрашиваем объяснение…</div>
+                    ) : (
+                      chat.map((m, i) => (
+                        <div key={i} className={m.role === 'user' ? 'text-sm p-2 bg-blue-50 dark:bg-slate-800' : 'text-sm p-2 bg-slate-50 dark:bg-slate-900'}>
+                          {m.role === 'user' ? 'Вы: ' : 'ИИ: '}{m.content}
+                        </div>
+                      ))
+                    )}
                   </div>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget);
-                      const message = String(f.get('message') || '').trim();
-                      if (!message) return;
-                      const log = document.getElementById('ai-chat-log');
-                      if (log) {
-                        const you = document.createElement('div');
-                        you.className = 'text-sm p-2 bg-blue-50 dark:bg-slate-800';
-                        you.textContent = `Вы: ${message}`;
-                        log.appendChild(you);
-                        const bot = document.createElement('div');
-                        bot.className = 'text-sm p-2 bg-slate-50 dark:bg-slate-900';
-                        bot.textContent = 'ИИ: (заглушка) Подумайте над условиями задачи и разбейте её на подзадачи.';
-                        log.appendChild(bot);
-                        log.scrollTop = log.scrollHeight;
-                      }
-                      (e.currentTarget as HTMLFormElement).reset();
-                    }}
-                    className="mt-2 flex gap-2"
-                  >
+                  <form onSubmit={onSendAIMessage} className="mt-2 flex gap-2">
                     <input name="message" placeholder="Ваш вопрос по задаче" className="border px-3 py-2 bg-transparent flex-1" />
                     <button className="px-3 py-2 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">Отправить</button>
                   </form>
