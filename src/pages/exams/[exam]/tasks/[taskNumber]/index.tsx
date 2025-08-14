@@ -204,23 +204,24 @@ export default function TaskPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
+                className="h-full"
               >
                 <Link 
                   href={`/exams/${examData.exam}/tasks/${examData.taskNumber}/${encodeURIComponent(topic)}${examData.mode ? `?mode=${examData.mode}` : ''}`}
-                  className="block card border p-6 hover:shadow-soft hover:-translate-y-1 transition-all duration-200"
+                  className="group h-full flex flex-col rounded-2xl border shadow-sm hover:shadow-md overflow-hidden transition-shadow"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">{capitalizeRu(topic)}</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Изучите теорию и практику по теме "{capitalizeRu(topic)}"
-                      </p>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-lg mb-2 line-clamp-2 min-h-[3rem] flex-1">{capitalizeRu(topic)}</h3>
+                      <div className="text-slate-400">
+                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-slate-400">
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 flex-1">
+                      Изучите теорию и практику по теме "{capitalizeRu(topic)}"
+                    </p>
                   </div>
                 </Link>
               </motion.div>

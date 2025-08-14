@@ -6,6 +6,35 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowLeftIcon, BookOpenIcon, ChevronDownIcon, ChevronUpIcon, LightBulbIcon, AcademicCapIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
+// Утилита для капитализации русских строк
+const capitalizeRu = (str: string): string => {
+  if (!str) return str;
+  
+  // Находим первый лексический фрагмент (до разделителя)
+  const separators = ['/', '—', ',', ' ', '-'];
+  let firstPart = str;
+  let separator = '';
+  
+  for (const sep of separators) {
+    const index = str.indexOf(sep);
+    if (index > 0 && index < firstPart.length) {
+      firstPart = str.substring(0, index);
+      separator = sep;
+      break;
+    }
+  }
+  
+  // Капитализируем первый фрагмент
+  const capitalized = firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+  
+  // Возвращаем с остальной частью строки
+  if (separator) {
+    return capitalized + separator + str.substring(firstPart.length + separator.length);
+  }
+  
+  return capitalized;
+};
+
 interface PracticeTask {
   id: number;
   number: number;
@@ -192,7 +221,7 @@ export default function TopicPage() {
           <div className="flex items-center gap-4">
             <BookOpenIcon className="h-8 w-8 text-slate-500" />
             <div>
-              <h1 className="text-3xl font-bold">{decodedTopic}</h1>
+              <h1 className="text-3xl font-bold">№{taskNumber}. {capitalizeRu(decodedTopic)}</h1>
               <p className="text-slate-600 dark:text-slate-400">Теория и практика по теме для подготовки к {examConfig.name}</p>
             </div>
           </div>
