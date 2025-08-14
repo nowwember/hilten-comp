@@ -1,0 +1,45 @@
+---
+description: [PCB]
+    Название/брендинг: "ХилтэнКомп" — "Хилтэн" (красные тона), "Комп" (желтые тона). Стиль: минимализм как plonq.ru (гладкие hover, скругления, чистая типографика), без затемнения экрана при модалках (если не оговорено).
+
+Стек:
+- Frontend: Next.js (React + TypeScript), TailwindCSS
+- Backend: Next.js API Routes + Prisma ORM
+- DB: PostgreSQL (Docker в dev)
+- Auth: NextAuth (JWT)
+- Realtime: Socket.IO
+- Whiteboard: Excalidraw (коллаб, persist, share links)
+- AI: OpenAI API (модель из .env, по умолчанию gpt-4o-mini)
+
+Функции:
+- База задач (условие + ответ + отметка «решено»)
+- Профили учеников (прогресс, точность, время)
+- Сортировка/фильтры (сложность и др.)
+- Кнопка «Объяснение от ИИ» строго по текущей задаче
+- Онлайн-доска: совместно, persist по taskId/session, share-ссылка
+
+История:
+- ✅ /api/task-explanation работает; фикс off-topic был: теперь в промпт передаем полное условие + решение
+- ⚠️ Whiteboard: нужна 100% надежная realtime-синхронизация и персист при reload/join
+- ❌ Навигация: возврат с доски сбрасывал task-view к списку (потеря контекста)
+- ❌ Часть UI-контролов (дропдауны/сортировка) вне единого стиля
+
+Ограничения и правила:
+- Не устанавливать пакеты без явного ОК. Если нужны — минимальный список, после моего подтверждения: одна команда `pnpm add -E ... --frozen-lockfile`.
+- В каждом ответе — **точные пути** и **patch-диффы**. Не трогать чужие модули/конфиги без запроса.
+- taskId/sessionId обязателен в URL/сокетах/persist.
+- UI: единые токены Tailwind, без самовольных новых токенов.
+
+ENV/фичефлаги:
+- `OPENAI_API_KEY`, `AI_MODEL=gpt-4o-mini`, `NEXTAUTH_SECRET`, `DATABASE_URL`, `SOCKET_ORIGIN`
+- `FEATURE_AI_EXPLAIN`, `FEATURE_WHITEBOARD_SNAPSHOT`
+
+Команды (dev):
+- `docker compose up -d db`
+- `pnpm prisma generate`
+- `pnpm dev`
+[/PCB]
+
+globs:
+alwaysApply: false
+---

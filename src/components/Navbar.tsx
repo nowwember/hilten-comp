@@ -26,6 +26,8 @@ export default function Navbar() {
         </Link>
         <div className="flex items-center gap-1 sm:gap-3 text-sm">
           <Link href="/tasks" className="px-3 py-2 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/5 transition">Задачи</Link>
+          <Link href="/exams/oge" className="px-3 py-2 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/5 transition">ОГЭ</Link>
+          <Link href="/exams/ege" className="px-3 py-2 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/5 transition">ЕГЭ</Link>
           <Link href={{ pathname: '/whiteboard', query: typeof window !== 'undefined' ? { taskId: new URLSearchParams(window.location.search).get('id') || undefined } : {} }} className="px-3 py-2 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/5 transition">Доска</Link>
           <Link href="/profile" className="px-3 py-2 rounded-lg hover:bg-slate-900/5 dark:hover:bg-white/5 transition">Профиль</Link>
           <button
