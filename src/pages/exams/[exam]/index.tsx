@@ -1,15 +1,46 @@
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
-import { getExamConfig, ExamType } from '@/lib/exams/config';
+import { getExam, groupTasksByPart, ExamId, EgeMode } from '@/lib/exams/config';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ClockIcon, AcademicCapIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { ClockIcon, AcademicCapIcon, ChartBarIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 export default function ExamLanding() {
   const router = useRouter();
-  const { exam } = router.query;
+  const { exam, mode } = router.query;
+  
+  const [currentMode, setCurrentMode] = useState<EgeMode>('base');
+  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const MAX_TASKS_PER_TYPE = 5;
+  
+  // Инициализация режима из URL
+  useEffect(() => {
+    if (exam === 'ege') {
+      const urlMode = mode as EgeMode;
+      if (urlMode && (urlMode === 'base' || urlMode === 'profile')) {
+        setCurrentMode(urlMode);
+      } else {
+        setCurrentMode('base');
+      }
+    }
+    setIsLoading(false);
+  }, [exam, mode]);
+  
+  // Показываем загрузку пока router.query не готов
+  if (isLoading || !router.isReady) {
+    return (
+      <Layout title="Загрузка...">
+        <div className="p-6">
+          <div className="text-center text-slate-500">Загрузка...</div>
+        </div>
+      </Layout>
+    );
+  }
   
   if (!exam || typeof exam !== 'string') {
+    console.log('Exam validation failed:', { exam, type: typeof exam });
     return (
       <Layout title="Экзамен не найден">
         <div className="p-6">
@@ -19,9 +50,11 @@ export default function ExamLanding() {
     );
   }
 
-  const examConfig = getExamConfig(exam as ExamType);
+  console.log('Getting exam config for:', { exam, currentMode });
+  const examConfig = getExam(exam as ExamId, exam === 'ege' ? currentMode : undefined);
   
   if (!examConfig) {
+    console.log('Exam config not found for:', { exam, currentMode });
     return (
       <Layout title="Экзамен не найден">
         <div className="p-6">
@@ -30,6 +63,8 @@ export default function ExamLanding() {
       </Layout>
     );
   }
+
+  console.log('Exam config loaded:', examConfig.name);
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -45,6 +80,59 @@ export default function ExamLanding() {
       default: return 'bg-slate-100 text-slate-700 dark:bg-slate-900/20 dark:text-slate-400';
     }
   };
+
+  const getTaskCountKey = (taskNumber: number) => {
+    if (exam === 'ege') {
+      return `${exam}:${currentMode}:${taskNumber}`;
+    }
+    return `${exam}:default:${taskNumber}`;
+  };
+
+  const handleTaskCountChange = (taskNumber: number, increment: boolean) => {
+    const key = getTaskCountKey(taskNumber);
+    const currentCount = taskCounts[key] || 0;
+    const newCount = increment 
+      ? Math.min(currentCount + 1, MAX_TASKS_PER_TYPE)
+      : Math.max(currentCount - 1, 0);
+    
+    setTaskCounts(prev => ({
+      ...prev,
+      [key]: newCount
+    }));
+  };
+
+  const handleModeChange = (newMode: EgeMode) => {
+    setCurrentMode(newMode);
+    // Обновляем URL без перезагрузки страницы
+    router.push({
+      pathname: router.pathname,
+      query: { ...router.query, mode: newMode }
+    }, undefined, { shallow: true });
+  };
+
+  const handleCreateVariant = () => {
+    const selectedTasks = Object.entries(taskCounts)
+      .filter(([key, count]) => {
+        const [examKey, modeKey] = key.split(':');
+        return count > 0 && examKey === exam && 
+               (exam === 'oge' ? modeKey === 'default' : modeKey === currentMode);
+      })
+      .map(([key, count]) => {
+        const taskNumber = parseInt(key.split(':')[2]);
+        return { taskNumber, count };
+      });
+    
+    const result = {
+      exam: exam as ExamId,
+      mode: exam === 'ege' ? currentMode : undefined,
+      picks: selectedTasks
+    };
+    
+    console.log('Выбранные задания:', result);
+    console.log('Общее количество заданий:', selectedTasks.reduce((sum, task) => sum + task.count, 0));
+  };
+
+  const { part1, part2 } = groupTasksByPart(examConfig.tasks);
 
   return (
     <Layout title={`${examConfig.name} - ${examConfig.fullName}`}>
@@ -62,6 +150,39 @@ export default function ExamLanding() {
           <p className="text-xl text-slate-600 dark:text-slate-300">{examConfig.fullName}</p>
           <p className="text-slate-500 max-w-2xl mx-auto">{examConfig.description}</p>
         </motion.div>
+
+        {/* Переключатель режима для ЕГЭ */}
+        {exam === 'ege' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="flex justify-center"
+          >
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+              <button
+                onClick={() => handleModeChange('base')}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                  currentMode === 'base'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                Базовая
+              </button>
+              <button
+                onClick={() => handleModeChange('profile')}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                  currentMode === 'profile'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                Профильная
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Статистика экзамена */}
         <motion.div 
@@ -87,47 +208,155 @@ export default function ExamLanding() {
           </div>
         </motion.div>
 
+        {/* Кнопка составления варианта */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="flex justify-center"
+        >
+          <button
+            onClick={handleCreateVariant}
+            className="rounded-xl bg-red-500 text-white px-6 py-3 hover:bg-red-600 transition-colors font-medium"
+          >
+            Составить вариант
+          </button>
+        </motion.div>
+
         {/* Сетка задач */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="space-y-4"
+          className="space-y-8"
         >
-          <h2 className="text-2xl font-bold text-center">Задачи экзамена</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-            {examConfig.tasks.map((task, index) => (
-              <motion.div
-                key={task.number}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-              >
-                <Link 
-                  href={`/exams/${exam}/tasks/${task.number}`}
-                  className="block card border p-6 hover:shadow-soft hover:-translate-y-1 transition-all duration-200"
+          {/* Часть 1 */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold mt-6 mb-2">Часть 1</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {part1.map((task, index) => (
+                <motion.div
+                  key={task.number}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.02 }}
+                  className="h-full"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="text-2xl font-bold text-slate-700 dark:text-slate-300">
-                      №{task.number}
+                  <div className="group rounded-2xl border shadow-sm hover:shadow-md overflow-hidden transition-shadow h-full flex flex-col">
+                    {/* Карточка задания */}
+                    <Link 
+                      href={`/exams/${exam}/tasks/${task.number}${exam === 'ege' ? `?mode=${currentMode}` : ''}`}
+                      className="p-4 flex-1 flex flex-col"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="text-lg font-bold text-slate-700 dark:text-slate-300">
+                          №{task.number}
+                        </div>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
+                          {task.difficulty === 'easy' ? 'Легко' : 
+                           task.difficulty === 'medium' ? 'Средне' : 'Сложно'}
+                        </span>
+                      </div>
+                      <h3 className="font-medium text-sm mb-1 line-clamp-2 flex-1 min-h-[2.5rem]">{task.title}</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
+                        {task.description}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-slate-500 mt-auto">
+                        <span>{task.estimatedTime} мин</span>
+                        <span>{task.topics.length} тем</span>
+                      </div>
+                    </Link>
+                    
+                    {/* Счетчик задач */}
+                    <div className="flex items-center justify-between bg-white/50 dark:bg-slate-900/50 border-t px-3 py-2">
+                      <button
+                        onClick={() => handleTaskCountChange(task.number, false)}
+                        disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === 0}
+                        className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <MinusIcon className="h-3 w-3" />
+                      </button>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {taskCounts[getTaskCountKey(task.number)] || 0}
+                      </span>
+                      <button
+                        onClick={() => handleTaskCountChange(task.number, true)}
+                        disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === MAX_TASKS_PER_TYPE}
+                        className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <PlusIcon className="h-3 w-3" />
+                      </button>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
-                      {task.difficulty === 'easy' ? 'Легко' : 
-                       task.difficulty === 'medium' ? 'Средне' : 'Сложно'}
-                    </span>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{task.title}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">
-                    {task.description}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{task.estimatedTime} мин</span>
-                    <span>{task.topics.length} тем</span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </div>
           </div>
+
+          {/* Часть 2 (если есть) */}
+          {part2.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold mt-6 mb-2">Часть 2</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {part2.map((task, index) => (
+                  <motion.div
+                    key={task.number}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + index * 0.02 }}
+                    className="h-full"
+                  >
+                    <div className="group rounded-2xl border shadow-sm hover:shadow-md overflow-hidden transition-shadow h-full flex flex-col">
+                      {/* Карточка задания */}
+                      <Link 
+                        href={`/exams/${exam}/tasks/${task.number}${exam === 'ege' ? `?mode=${currentMode}` : ''}`}
+                        className="p-4 flex-1 flex flex-col"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="text-lg font-bold text-slate-700 dark:text-slate-300">
+                            №{task.number}
+                          </div>
+                          <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
+                            {task.difficulty === 'easy' ? 'Легко' : 
+                             task.difficulty === 'medium' ? 'Средне' : 'Сложно'}
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-sm mb-1 line-clamp-2 flex-1 min-h-[2.5rem]">{task.title}</h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
+                          {task.description}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-auto">
+                          <span>{task.estimatedTime} мин</span>
+                          <span>{task.topics.length} тем</span>
+                        </div>
+                      </Link>
+                      
+                      {/* Счетчик задач */}
+                      <div className="flex items-center justify-between bg-white/50 dark:bg-slate-900/50 border-t px-3 py-2">
+                        <button
+                          onClick={() => handleTaskCountChange(task.number, false)}
+                          disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === 0}
+                          className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                          <MinusIcon className="h-3 w-3" />
+                        </button>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          {taskCounts[getTaskCountKey(task.number)] || 0}
+                        </span>
+                        <button
+                          onClick={() => handleTaskCountChange(task.number, true)}
+                          disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === MAX_TASKS_PER_TYPE}
+                          className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                          <PlusIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </Layout>

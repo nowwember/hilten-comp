@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
-import { getExamConfig, getTaskConfig, ExamType } from '@/lib/exams/config';
+import { getExam, ExamId, EgeMode } from '@/lib/exams/config';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -16,7 +16,7 @@ interface PracticeTask {
 
 export default function TopicPage() {
   const router = useRouter();
-  const { exam, taskNumber, topic } = router.query;
+  const { exam, taskNumber, topic, mode } = router.query;
   
   const [isTheoryExpanded, setIsTheoryExpanded] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -40,8 +40,19 @@ export default function TopicPage() {
     );
   }
 
-  const examConfig = getExamConfig(exam as ExamType);
-  const taskConfig = getTaskConfig(exam as ExamType, parseInt(taskNumber));
+  // Определяем режим для ЕГЭ
+  let currentMode: EgeMode | undefined;
+  if (exam === 'ege') {
+    const urlMode = mode as EgeMode;
+    if (urlMode && (urlMode === 'base' || urlMode === 'profile')) {
+      currentMode = urlMode;
+    } else {
+      currentMode = 'base'; // по умолчанию базовая
+    }
+  }
+
+  const examConfig = getExam(exam as ExamId, currentMode);
+  const taskConfig = examConfig.tasks.find(task => task.number === parseInt(taskNumber));
   const decodedTopic = decodeURIComponent(topic);
   
   if (!examConfig || !taskConfig || !taskConfig.topics.includes(decodedTopic)) {
@@ -163,7 +174,7 @@ export default function TopicPage() {
           className="flex items-center gap-4"
         >
           <Link 
-            href={`/exams/${exam}/tasks/${taskNumber}`}
+            href={`/exams/${exam}/tasks/${taskNumber}${mode ? `?mode=${mode}` : ''}`}
             className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition"
           >
             <ArrowLeftIcon className="h-4 w-4" />
@@ -386,7 +397,7 @@ export default function TopicPage() {
           className="flex flex-col sm:flex-row gap-4 pt-6"
         >
           <Link 
-            href={`/whiteboard?taskId=${exam}-${taskNumber}&topic=${encodeURIComponent(decodedTopic)}`}
+            href={`/whiteboard?taskId=${exam}-${taskNumber}&topic=${encodeURIComponent(decodedTopic)}${mode ? `&mode=${mode}` : ''}`}
             className="flex-1 py-4 px-6 rounded-xl text-white gradient-accent shadow-soft text-center font-medium hover:shadow-lg transition-shadow"
           >
             Открыть доску для практики

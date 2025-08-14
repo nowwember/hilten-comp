@@ -1,15 +1,70 @@
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
-import { getExamConfig, getTaskConfig, ExamType } from '@/lib/exams/config';
+import { getExam, ExamId, EgeMode } from '@/lib/exams/config';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeftIcon, ClockIcon, AcademicCapIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+
+// Утилита для капитализации русских строк
+const capitalizeRu = (str: string): string => {
+  if (!str) return str;
+  
+  // Находим первый лексический фрагмент (до разделителя)
+  const separators = ['/', '—', ',', ' ', '-'];
+  let firstPart = str;
+  let separator = '';
+  
+  for (const sep of separators) {
+    const index = str.indexOf(sep);
+    if (index > 0 && index < firstPart.length) {
+      firstPart = str.substring(0, index);
+      separator = sep;
+      break;
+    }
+  }
+  
+  // Капитализируем первый фрагмент
+  const capitalized = firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+  
+  // Возвращаем с остальной частью строки
+  if (separator) {
+    return capitalized + separator + str.substring(firstPart.length + separator.length);
+  }
+  
+  return capitalized;
+};
 
 export default function TaskPage() {
   const router = useRouter();
-  const { exam, taskNumber } = router.query;
+  const { exam, taskNumber, mode } = router.query;
   
-  if (!exam || !taskNumber || typeof exam !== 'string' || typeof taskNumber !== 'string') {
+  console.log('Router query:', router.query);
+  console.log('Exam, taskNumber, mode:', { exam, taskNumber, mode });
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [examData, setExamData] = useState<{ exam: string; taskNumber: string; mode?: string } | null>(null);
+  
+  useEffect(() => {
+    console.log('useEffect triggered:', { exam, taskNumber, mode });
+    if (exam && taskNumber) {
+      console.log('Setting exam data:', { exam, taskNumber, mode });
+      setExamData({ exam: exam as string, taskNumber: taskNumber as string, mode: mode as string });
+      setIsLoading(false);
+    }
+  }, [exam, taskNumber, mode]);
+  
+  if (isLoading) {
+    return (
+      <Layout title="Загрузка...">
+        <div className="p-6">
+          <div className="text-center text-slate-500">Загрузка...</div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (!examData) {
     return (
       <Layout title="Задача не найдена">
         <div className="p-6">
@@ -19,14 +74,35 @@ export default function TaskPage() {
     );
   }
 
-  const examConfig = getExamConfig(exam as ExamType);
-  const taskConfig = getTaskConfig(exam as ExamType, parseInt(taskNumber));
+  // Определяем режим для ЕГЭ
+  let currentMode: EgeMode | undefined;
+  if (examData.exam === 'ege') {
+    const urlMode = examData.mode as EgeMode;
+    if (urlMode && (urlMode === 'base' || urlMode === 'profile')) {
+      currentMode = urlMode;
+    } else {
+      currentMode = 'base'; // по умолчанию базовая
+    }
+  }
+
+  console.log('Task page debug:', { exam: examData.exam, taskNumber: examData.taskNumber, mode: examData.mode, currentMode });
+
+  const examConfig = getExam(examData.exam as ExamId, currentMode);
+  console.log('Exam config:', { name: examConfig.name, tasksCount: examConfig.tasks.length });
+  console.log('Available task numbers:', examConfig.tasks.map(t => t.number));
+  
+  const taskConfig = examConfig.tasks.find(task => task.number === parseInt(examData.taskNumber));
+  console.log('Task config found:', !!taskConfig, { taskNumber: parseInt(examData.taskNumber), foundTask: taskConfig?.title });
   
   if (!examConfig || !taskConfig) {
+    console.log('Task not found:', { examConfig: !!examConfig, taskConfig: !!taskConfig });
     return (
       <Layout title="Задача не найдена">
         <div className="p-6">
           <div className="text-center text-slate-500">Задача не найдена</div>
+          <div className="text-center text-xs text-slate-400 mt-2">
+            Debug: exam={examData.exam}, taskNumber={examData.taskNumber}, mode={examData.mode}
+          </div>
         </div>
       </Layout>
     );
@@ -60,7 +136,7 @@ export default function TaskPage() {
           className="flex items-center gap-4"
         >
           <Link 
-            href={`/exams/${exam}`}
+            href={`/exams/${examData.exam}${examData.mode ? `?mode=${examData.mode}` : ''}`}
             className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition"
           >
             <ArrowLeftIcon className="h-4 w-4" />
@@ -130,14 +206,14 @@ export default function TaskPage() {
                 transition={{ delay: 0.4 + index * 0.1 }}
               >
                 <Link 
-                  href={`/exams/${exam}/tasks/${taskNumber}/${encodeURIComponent(topic)}`}
+                  href={`/exams/${examData.exam}/tasks/${examData.taskNumber}/${encodeURIComponent(topic)}${examData.mode ? `?mode=${examData.mode}` : ''}`}
                   className="block card border p-6 hover:shadow-soft hover:-translate-y-1 transition-all duration-200"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">{topic}</h3>
+                      <h3 className="font-semibold text-lg mb-2">{capitalizeRu(topic)}</h3>
                       <p className="text-sm text-slate-600 dark:text-slate-400">
-                        Изучите теорию и практику по теме "{topic}"
+                        Изучите теорию и практику по теме "{capitalizeRu(topic)}"
                       </p>
                     </div>
                     <div className="text-slate-400">
@@ -160,7 +236,7 @@ export default function TaskPage() {
           className="flex flex-col sm:flex-row gap-4 pt-4"
         >
           <Link 
-            href={`/whiteboard?taskId=${exam}-${taskNumber}`}
+            href={`/whiteboard?taskId=${examData.exam}-${examData.taskNumber}${examData.mode ? `&mode=${examData.mode}` : ''}`}
             className="flex-1 py-4 px-6 rounded-xl text-white gradient-accent shadow-soft text-center font-medium hover:shadow-lg transition-shadow"
           >
             Открыть доску для решения
