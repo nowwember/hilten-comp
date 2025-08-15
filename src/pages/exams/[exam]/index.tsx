@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ClockIcon, AcademicCapIcon, ChartBarIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { getCurrentMonth, DEFAULT_DURATION_MINUTES } from '@/lib/exams/variants';
+import { generateRandomVariantBySeed } from '@/lib/exams/variants';
 
 export default function ExamLanding() {
   const router = useRouter();
@@ -15,6 +17,11 @@ export default function ExamLanding() {
   const [isLoading, setIsLoading] = useState(true);
   const MAX_TASKS_PER_TYPE = 5;
   
+  const [showRandomPreview, setShowRandomPreview] = useState(false);
+  const [randomSeed, setRandomSeed] = useState<string | null>(null);
+  const [randomVariant, setRandomVariant] = useState<any>(null);
+  const month = getCurrentMonth();
+
   // Инициализация режима из URL
   useEffect(() => {
     if (exam === 'ege') {
@@ -132,6 +139,20 @@ export default function ExamLanding() {
     console.log('Общее количество заданий:', selectedTasks.reduce((sum, task) => sum + task.count, 0));
   };
 
+  const handleShowRandom = () => {
+    const seed = `${month}:${exam}:${exam === 'ege' ? currentMode : 'default'}:${Date.now()}`;
+    setRandomSeed(seed);
+    setRandomVariant(generateRandomVariantBySeed({ month, exam: exam as any, mode: exam === 'ege' ? currentMode : undefined, seed }));
+    setShowRandomPreview(true);
+  };
+  const handleStartRandom = () => {
+    if (!randomSeed) return;
+    router.push({
+      pathname: `/exams/${exam}/variant/_/solve`,
+      query: { month, ...(exam === 'ege' ? { mode: currentMode } : {}), seed: randomSeed },
+    });
+  };
+
   const { part1, part2 } = groupTasksByPart(examConfig.tasks);
 
   return (
@@ -208,20 +229,53 @@ export default function ExamLanding() {
           </div>
         </motion.div>
 
-        {/* Кнопка составления варианта */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="flex justify-center"
-        >
+        {/* Панель кнопок (адаптив) */}
+        <div className="w-full flex flex-col sm:flex-row gap-3 mb-8">
+          <button
+            onClick={handleShowRandom}
+            className="flex-1 rounded-xl border border-red-500 text-red-500 px-6 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+            type="button"
+          >
+            Случайный вариант
+          </button>
+          <Link
+            href={{ pathname: `/exams/${exam}/variants`, query: { month, ...(exam === 'ege' ? { mode: currentMode } : {}) } }}
+            className="flex-1 rounded-xl bg-red-500 text-white px-6 py-3 hover:bg-red-600 transition-colors font-medium text-center"
+          >
+            Варианты
+          </Link>
           <button
             onClick={handleCreateVariant}
-            className="rounded-xl bg-red-500 text-white px-6 py-3 hover:bg-red-600 transition-colors font-medium"
+            className="flex-1 rounded-xl border border-red-500 text-red-500 px-6 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+            type="button"
           >
             Составить вариант
           </button>
-        </motion.div>
+        </div>
+
+        {/* Превью случайного варианта */}
+        {showRandomPreview && randomVariant && (
+          <div className="relative w-full max-w-xl mx-auto mb-8 border rounded-2xl bg-white dark:bg-slate-900/80 shadow-lg p-6 z-20">
+            <div className="font-bold text-lg mb-2">Случайный вариант — {exam === 'oge' ? 'ОГЭ' : exam === 'ege' && currentMode === 'profile' ? 'ЕГЭ профильная' : 'ЕГЭ базовая'}</div>
+            <div className="mb-2 text-slate-600 dark:text-slate-300 text-sm">Месяц: <b>{month}</b></div>
+            <div className="mb-2 text-slate-600 dark:text-slate-300 text-sm">Время: <b>{exam === 'oge' ? DEFAULT_DURATION_MINUTES.oge : currentMode === 'profile' ? DEFAULT_DURATION_MINUTES.ege_profile : DEFAULT_DURATION_MINUTES.ege_base} мин</b></div>
+            <div className="mb-4 text-slate-600 dark:text-slate-300 text-sm">Полный комплект заданий</div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleStartRandom}
+                className="flex-1 rounded-xl bg-red-500 text-white px-6 py-3 hover:bg-red-600 transition-colors font-medium"
+              >
+                Начать
+              </button>
+              <button
+                onClick={() => setShowRandomPreview(false)}
+                className="flex-1 rounded-xl border border-red-500 text-red-500 px-6 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Сетка задач */}
         <motion.div 
