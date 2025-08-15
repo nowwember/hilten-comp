@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { getVariants, getCurrentMonth, Variant, ExamId, Mode, variantsByMonth, DEFAULT_DURATION_MINUTES } from '@/lib/exams/variants';
 
 const monthOptions = Object.keys(variantsByMonth).sort().reverse();
-const modeLabels = { base: 'Базовая', profile: 'Профильная' };
+const modeLabels: Record<'base' | 'profile', string> = {
+  base: 'Базовая',
+  profile: 'Профильная',
+};
 
 export default function VariantsListPage() {
   const router = useRouter();
@@ -66,7 +69,7 @@ export default function VariantsListPage() {
         <div className="flex gap-2 items-center relative">
           {exam === 'ege' && (
             <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-              {(['base', 'profile'] as Mode[]).map(mode => (
+              {(['base', 'profile'] as const).map(mode => (
                 <button
                   key={mode}
                   onClick={() => { setCurrentMode(mode); updateQuery({ mode }); }}
