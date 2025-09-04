@@ -58,7 +58,7 @@ export function MathRenderer({ markdown, className }: MathRendererProps) {
   const [isClient, setIsClient] = useState(false);
   const [html, setHtml] = useState<string>('');
   const lastMarkdownRef = useRef<string>('');
-  const typesetTimeoutRef = useRef<NodeJS.Timeout>();
+  const typesetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setIsClient(true);
