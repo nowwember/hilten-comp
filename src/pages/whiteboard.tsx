@@ -1,4 +1,3 @@
-import Layout from '@/components/Layout';
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
@@ -68,7 +67,7 @@ export default function Whiteboard() {
   }, [sessionId, taskId]);
 
   return (
-    <Layout title="Whiteboard">
+    <>
       <div className="h-[calc(100vh-80px)]">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-sm text-slate-500">Комната: {roomId}</div>
@@ -88,6 +87,6 @@ export default function Whiteboard() {
           <Excalidraw initialData={initialData as any} onChange={onChange as any} />
         </div>
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-import Layout from '@/components/Layout';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -49,7 +48,7 @@ export default function Tasks() {
   }
 
   return (
-    <Layout title="Задачи">
+    <>
       <div className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Тема" className="border px-4 py-3 bg-transparent flex-1 rounded-xl" />
@@ -84,6 +83,14 @@ export default function Tasks() {
         {/* Кнопка сортировки перенесена в верхний блок справа от поиска */}
 
         <motion.div className="grid gap-3" initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}>
+          <motion.div variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}>
+            <Link href="/tasks/integral-katex-test" className="block card border p-5 hover:shadow-soft hover:-translate-y-0.5 transition-transform">
+              <div className="flex items-center justify-between gap-4">
+                <div className="font-medium text-lg flex-1">Тест: интеграл (рендер математики)</div>
+                <div className="text-sm text-slate-500 text-right min-w-[180px]">Тест · MATH</div>
+              </div>
+            </Link>
+          </motion.div>
           {!data ? (
             <div>Загрузка…</div>
           ) : data.length === 0 ? (
@@ -107,6 +114,6 @@ export default function Tasks() {
           )}
         </motion.div>
       </div>
-    </Layout>
+    </>
   );
 }

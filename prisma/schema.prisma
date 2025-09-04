@@ -67,3 +67,14 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model AiChatSession {
+  id        String   @id @default(cuid())
+  userId    String?
+  taskId    String
+  messages  Json     @db.JsonB
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, taskId], map: "idx_user_task")
+}

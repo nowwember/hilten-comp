@@ -1,4 +1,3 @@
-import Layout from '@/components/Layout';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -12,7 +11,7 @@ export default function Profile() {
   const { data } = useSWR(session ? '/api/users/me' : null, fetcher);
 
   return (
-    <Layout title="Профиль">
+    <>
       <div className="space-y-6">
         {!session ? (
           <div>
@@ -67,6 +66,6 @@ export default function Profile() {
           </>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 import { getCsrfToken, signIn } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
-import Layout from '@/components/Layout';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -26,7 +25,7 @@ export default function SignIn({ csrfToken }: { csrfToken: string }) {
   }
 
   return (
-    <Layout title="Войти">
+    <>
       <div className="p-6 max-w-md mx-auto">
         <form onSubmit={onSubmit} className="space-y-4 border p-4">
           <input name="csrfToken" type="hidden" defaultValue={csrfToken} />
@@ -44,7 +43,7 @@ export default function SignIn({ csrfToken }: { csrfToken: string }) {
           <p className="text-sm text-slate-500">Нет аккаунта? <Link href="/auth/register" className="underline">Зарегистрироваться</Link></p>
         </form>
       </div>
-    </Layout>
+    </>
   );
 }
 

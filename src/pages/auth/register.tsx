@@ -1,4 +1,3 @@
-import Layout from '@/components/Layout';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
@@ -32,7 +31,7 @@ export default function Register() {
   }
 
   return (
-    <Layout title="Регистрация">
+    <>
       <div className="p-6 max-w-md mx-auto">
         <form onSubmit={onSubmit} className="space-y-4 border p-4">
           <div className="space-y-1">
@@ -54,7 +53,7 @@ export default function Register() {
           <p className="text-sm text-slate-500">Уже есть аккаунт? <Link href="/auth/signin" className="underline">Войти</Link></p>
         </form>
       </div>
-    </Layout>
+    </>
   );
 }
 

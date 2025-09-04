@@ -1,5 +1,4 @@
 import { useRouter } from 'next/router';
-import Layout from '@/components/Layout';
 import { getExam, ExamId, EgeMode } from '@/lib/exams/config';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -56,21 +55,21 @@ export default function TaskPage() {
   
   if (isLoading) {
     return (
-      <Layout title="Загрузка...">
+      <>
         <div className="p-6">
           <div className="text-center text-slate-500">Загрузка...</div>
         </div>
-      </Layout>
+      </>
     );
   }
   
   if (!examData) {
     return (
-      <Layout title="Задача не найдена">
+      <>
         <div className="p-6">
           <div className="text-center text-slate-500">Задача не найдена</div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -97,14 +96,14 @@ export default function TaskPage() {
   if (!examConfig || !taskConfig) {
     console.log('Task not found:', { examConfig: !!examConfig, taskConfig: !!taskConfig });
     return (
-      <Layout title="Задача не найдена">
+      <>
         <div className="p-6">
           <div className="text-center text-slate-500">Задача не найдена</div>
           <div className="text-center text-xs text-slate-400 mt-2">
             Debug: exam={examData.exam}, taskNumber={examData.taskNumber}, mode={examData.mode}
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -127,7 +126,7 @@ export default function TaskPage() {
   };
 
   return (
-    <Layout title={`Задача ${taskNumber} - ${examConfig.name}`}>
+    <>
       <div className="p-6 space-y-6">
         {/* Навигация */}
         <motion.div 
@@ -250,6 +249,6 @@ export default function TaskPage() {
           </Link>
         </motion.div>
       </div>
-    </Layout>
+    </>
   );
 }

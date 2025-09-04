@@ -1,9 +1,8 @@
-import Layout from '@/components/Layout';
 import { motion } from 'framer-motion';
 
 export default function Home() {
   return (
-    <Layout title="My Edu Platform">
+    <>
       <motion.section
         className="hero-bg rounded-2xl p-10 sm:p-16 shadow-soft"
         initial={{ opacity: 0, y: 12 }}
@@ -42,6 +41,6 @@ export default function Home() {
           </motion.div>
         ))}
       </motion.section>
-    </Layout>
+    </>
   );
 }

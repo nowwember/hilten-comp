@@ -1,5 +1,4 @@
 import { useRouter } from 'next/router';
-import Layout from '@/components/Layout';
 import { getExam, groupTasksByPart, ExamId, EgeMode } from '@/lib/exams/config';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -38,22 +37,22 @@ export default function ExamLanding() {
   // Показываем загрузку пока router.query не готов
   if (isLoading || !router.isReady) {
     return (
-      <Layout title="Загрузка...">
+      <>
         <div className="p-6">
           <div className="text-center text-slate-500">Загрузка...</div>
         </div>
-      </Layout>
+      </>
     );
   }
   
   if (!exam || typeof exam !== 'string') {
     console.log('Exam validation failed:', { exam, type: typeof exam });
     return (
-      <Layout title="Экзамен не найден">
+      <>
         <div className="p-6">
           <div className="text-center text-slate-500">Экзамен не найден</div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -63,11 +62,11 @@ export default function ExamLanding() {
   if (!examConfig) {
     console.log('Exam config not found for:', { exam, currentMode });
     return (
-      <Layout title="Экзамен не найден">
+      <>
         <div className="p-6">
           <div className="text-center text-slate-500">Экзамен не найден</div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -156,7 +155,7 @@ export default function ExamLanding() {
   const { part1, part2 } = groupTasksByPart(examConfig.tasks);
 
   return (
-    <Layout title={`${examConfig.name} - ${examConfig.fullName}`}>
+    <>
       <div className="p-6 space-y-8">
         {/* Заголовок экзамена */}
         <motion.div 
@@ -413,6 +412,6 @@ export default function ExamLanding() {
           )}
         </motion.div>
       </div>
-    </Layout>
+    </>
   );
 }
