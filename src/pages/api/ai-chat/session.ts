@@ -7,8 +7,8 @@ type ChatRole = 'user' | 'assistant';
 type ChatMsg = { id: string; role: ChatRole; content: string; createdAt: string };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerSession(req, res, authOptions as any);
-  const userId = (session?.user as any)?.id as string | undefined;
+  const session = await getServerSession(req, res, authOptions as any) as any;
+  const userId = session?.user?.id as string | undefined;
 
   if (req.method === 'GET') {
     const taskId = (req.query.taskId as string) || '';
