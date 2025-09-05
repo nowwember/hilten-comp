@@ -1,0 +1,65 @@
+name: FIPI Ingest
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Limit items (0 for dry-run)'
+        required: false
+        default: '0'
+      perSubtopic:
+        description: 'Items per subtopic'
+        required: false
+        default: '2'
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies (no new deps yet)
+        run: npm ci
+
+      # NOTE: Dev-deps like Playwright/jsdom will be installed only after explicit OK
+      # - name: Install ingest dev-deps (guarded)
+      #   run: npm i -D -E playwright jsdom dompurify
+
+      - name: Run ingest (dry-run by default)
+        env:
+          FIPI_BASE: https://ege.fipi.ru/bank/
+          INGEST_RATE: 1
+          INGEST_USER_AGENT: HiltenComp Ingest (ci@local)
+          MAX_PER_SUBTOPIC: ${{ github.event.inputs.perSubtopic }}
+        run: |
+          npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --perSubtopic=${{ github.event.inputs.perSubtopic }} --limit=${{ github.event.inputs.limit }}
+
+      - name: Check for changes
+        id: gitdiff
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git status --porcelain
+          if [ -n "$(git status --porcelain data public/fipi || true)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.gitdiff.outputs.changed == 'true'
+        run: |
+          BRANCH="fipi-update/$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git add data public/fipi || true
+          git commit -m "FIPI ingest update"
+          git push --set-upstream origin "$BRANCH"
+          echo "Pushed $BRANCH. Create a PR manually or via gh CLI."
+
+
