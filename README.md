@@ -71,6 +71,31 @@
 3. **Автоматическое развертывание**
    - При каждом push в main ветку проект будет автоматически развертываться
 
+## Вытяжка задач ФИПИ через GitHub Actions
+
+1. Подготовка
+   - Убедитесь, что файл `.github/workflows/fipi-ingest.yml` лежит в ветке `main`.
+   - В репозитории GitHub зайдите в **Settings → Actions → General**:
+     - Enable Actions: Allow all actions and reusable workflows
+     - Workflow permissions: Read and write permissions + Allow GitHub Actions to create and approve pull requests
+   - Добавьте секреты (**Settings → Secrets and variables → Actions**):
+     - `FIPI_EGE_BASIC_START` = ссылка на раздел ЕГЭ (база)
+     - `INGEST_USER_AGENT` = ваш User-Agent
+
+2. Запуск
+   - Откройте вкладку **Actions** → выберите **FIPI Ingest (EGE basic)** → **Run workflow**.
+   - Укажите диапазон страниц (например, `startPage=1`, `endPage=10`) и `limit` (например, `400`), нажмите **Run**.
+
+3. Результат
+   - В логе сборки увидите шаги ingest → curate → coverage.
+   - Если есть изменения, автоматически создастся PR из ветки `fipi-update/<timestamp>` в `main`.
+   - Отчёт `coverage.md` доступен в `scripts/fipi/reports/coverage.md` (фрагмент — в Summary задачи в Actions).
+
+4. Советы
+   - Запускайте батчами (по 10–20 страниц), проверяйте покрытие и synthetic rate.
+   - Не запускайте этот workflow слишком часто (уважение к ресурсу ФИПИ).
+   - Для локальной отладки: `npm run ingest:fipi ...`, затем `tsx scripts/fipi/curate.ts ...` и `tsx scripts/fipi/report-coverage.ts`.
+
 ## Скрипты
 
 - `npm run dev` - Запуск сервера разработки

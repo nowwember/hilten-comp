@@ -7,6 +7,7 @@ import { BackLink } from '@/components/ui/BackLink';
 import { AnswerPanel } from '@/components/ui/AnswerPanel';
 import MathRenderer from '@/components/ui/MathRenderer';
 import { useAiExplain } from '@/components/ai/AiExplainProvider';
+import { SourceAttribution } from '@/components/tasks/SourceAttribution';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -109,7 +110,18 @@ export default function TaskPage() {
                   }`
                 }
               >
-                {!isStatementCollapsed && <MathRenderer markdown={task.content} />}
+                {!isStatementCollapsed && (
+                  <>
+                    <MathRenderer markdown={task.content} />
+                    {task.source_url && (
+                      <SourceAttribution
+                        url={task.source_url}
+                        accessedAt={task.accessed_at}
+                        id={task.source_id}
+                      />
+                    )}
+                  </>
+                )}
               </div>
             </div>
 

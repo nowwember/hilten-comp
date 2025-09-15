@@ -10,7 +10,13 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "ingest:fipi": "tsx -r dotenv/config scripts/fipi/ingest.ts",
+    "pw:install": "playwright install chromium",
+    "fipi:mvp:check": "tsx scripts/fipi/mvp-gate.ts"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "0.17.6",
@@ -46,7 +52,12 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "dompurify": "3.2.6",
+    "dotenv": "17.2.2",
+    "jsdom": "26.1.0",
+    "playwright": "1.55.0",
     "ts-node": "10.9.2",
+    "tsx": "4.20.5",
     "typescript": "5.5.4"
   }
 }
