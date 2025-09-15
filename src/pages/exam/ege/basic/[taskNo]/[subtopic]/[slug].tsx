@@ -1,7 +1,7 @@
 import TaskLayout from '@/layouts/TaskLayout'
 import type { GetServerSideProps } from 'next'
 import MathRenderer from '@/components/ui/MathRenderer'
-import { SourceAttribution } from '@/components/tasks/SourceAttribution'
+import SourceAttribution from '@/components/SourceAttribution'
 import { loadOne } from '@/lib/fipi/loaders'
 import type { FipiTaskJson } from '@/lib/fipi/types'
 import { EGE_BASIC_MAP } from '@/lib/fipi/ege-basic-map'

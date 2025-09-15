@@ -40,15 +40,51 @@ export function mkSlug(str: string): string {
   return out.replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 }
 
-export async function downloadAssetToPublic(url: string): Promise<string> {
-  const ext = path.extname(url).split('?')[0] || '.png'
-  const hash = sha256Hex(url)
-  const rel = path.posix.join('fipi', `${hash}${ext}`)
-  const abs = path.join(process.cwd(), 'public', rel)
-  if (!fs.existsSync(abs)) {
-    await downloadBinary(url, abs)
+export async function downloadAssetToPublic(src: string): Promise<string | null> {
+  try {
+    if (!src || src.startsWith('data:')) {
+      console.warn('skip data URI asset')
+      return null
+    }
+    const base = process.env.FIPI_EGE_BASIC_START || ''
+    const absUrl = new URL(src, base).toString()
+    if (absUrl.endsWith('loading_spinner.gif')) {
+      console.warn('spinner:', absUrl)
+      return null
+    }
+
+    // Probe fetch to ensure 200
+    const res = await (globalThis.fetch as typeof fetch)(absUrl)
+    if (res.status === 404) {
+      console.warn('skip 404 asset:', absUrl)
+      return null
+    }
+    if (!res.ok) {
+      console.warn(`skip asset (status ${res.status}):`, absUrl)
+      return null
+    }
+
+    const buf = Buffer.from(await res.arrayBuffer())
+    const urlObj = new URL(absUrl)
+    const ext = path.extname(urlObj.pathname) || '.png'
+    const hash = sha256Hex(absUrl)
+    const rel = path.posix.join('fipi', `${hash}${ext}`)
+    const abs = path.join(process.cwd(), 'public', rel)
+    if (!fs.existsSync(abs)) {
+      ensureDirSync(path.dirname(abs))
+      await fs.promises.writeFile(abs, buf)
+    }
+    return `/${rel}`
+  } catch (e) {
+    console.warn('skipped invalid asset', src, e)
+    return null
   }
-  return `/${rel}`
+}
+
+export async function saveDebugHtml(relativePathFromScripts: string, html: string) {
+  const abs = path.join(process.cwd(), 'scripts', 'fipi', relativePathFromScripts)
+  ensureDirSync(path.dirname(abs))
+  await fs.promises.writeFile(abs, html, 'utf8')
 }
 
 

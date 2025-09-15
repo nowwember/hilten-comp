@@ -22,7 +22,12 @@ export async function startBrowser(userAgent: string): Promise<{ browser: PWBrow
 
   const headlessEnv = process.env.INGEST_HEADLESS
   const headless = headlessEnv ? headlessEnv === 'true' : false
-  const browser = await chromium.launch({ headless, args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'] });
+  let browser: any
+  try {
+    browser = await chromium.launch({ channel: 'chrome', headless, args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'] });
+  } catch {
+    browser = await chromium.launch({ headless, args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'] });
+  }
   const context = await browser.newContext({
     userAgent,
     viewport: { width: 1366, height: 900 },

@@ -1,16 +1,20 @@
-name: FIPI Ingest
+name: FIPI Ingest & Curate (Batched)
 
 on:
   workflow_dispatch:
     inputs:
+      startPage:
+        description: "Start page"
+        required: true
+        default: "1"
+      endPage:
+        description: "End page"
+        required: true
+        default: "10"
       limit:
-        description: 'Limit items (0 for dry-run)'
-        required: false
-        default: '0'
-      perSubtopic:
-        description: 'Items per subtopic'
-        required: false
-        default: '2'
+        description: "Max cards (safety)"
+        required: true
+        default: "400"
 
 jobs:
   ingest:
@@ -24,21 +28,25 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies (no new deps yet)
+      - name: Install dependencies
         run: npm ci
 
-      # NOTE: Dev-deps like Playwright/jsdom will be installed only after explicit OK
-      # - name: Install ingest dev-deps (guarded)
-      #   run: npm i -D -E playwright jsdom dompurify
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
 
-      - name: Run ingest (dry-run by default)
+      - name: Run ingest (RAW batched)
         env:
-          FIPI_BASE: https://ege.fipi.ru/bank/
+          FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
+          INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
           INGEST_RATE: 1
-          INGEST_USER_AGENT: HiltenComp Ingest (ci@local)
-          MAX_PER_SUBTOPIC: ${{ github.event.inputs.perSubtopic }}
         run: |
-          npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --perSubtopic=${{ github.event.inputs.perSubtopic }} --limit=${{ github.event.inputs.limit }}
+          DEBUG_SAVE_HTML=0 npm run ingest:fipi -- --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }}
+
+      - name: Curate labeled vs review
+        run: npx tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=2000
+
+      - name: Coverage report
+        run: npx tsx scripts/fipi/report-coverage.ts
 
       - name: Check for changes
         id: gitdiff
@@ -51,15 +59,42 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
+          echo "changed_count=$(git status --porcelain data public/fipi | wc -l | tr -d ' ')" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        run: |
+          echo "### FIPI Ingest Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- startPage: ${{ github.event.inputs.startPage }}" >> $GITHUB_STEP_SUMMARY
+          echo "- endPage: ${{ github.event.inputs.endPage }}" >> $GITHUB_STEP_SUMMARY
+          echo "- limit: ${{ github.event.inputs.limit }}" >> $GITHUB_STEP_SUMMARY
+          echo "- changed files: ${{ steps.gitdiff.outputs.changed_count }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Commit and push changes
         if: steps.gitdiff.outputs.changed == 'true'
+        id: commitpush
         run: |
-          BRANCH="fipi-update/$(date +%Y%m%d-%H%M%S)"
+          TS="$(date +%Y%m%d-%H%M%S)"
+          BRANCH="fipi-update/${TS}"
           git checkout -b "$BRANCH"
           git add data public/fipi || true
           git commit -m "FIPI ingest update"
           git push --set-upstream origin "$BRANCH"
-          echo "Pushed $BRANCH. Create a PR manually or via gh CLI."
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.gitdiff.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ steps.commitpush.outputs.branch }}'
+            const { data: pr } = await github.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `FIPI ingest update (${new Date().toISOString()})`,
+              head: branch,
+              base: 'main',
+              body: 'Automated ingest + curate run.'
+            })
+            core.info(`PR created: ${pr.html_url}`)
 
 
