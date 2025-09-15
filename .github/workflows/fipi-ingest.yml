@@ -15,6 +15,11 @@ on:
         description: "Max cards (safety)"
         required: true
         default: "400"
+      enforceGate:
+        description: "Enforce MVP gate (2 per subtopic)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -45,13 +50,43 @@ jobs:
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
         run: |
           echo "Run ingest pages ${{ github.event.inputs.startPage }}..${{ github.event.inputs.endPage }}, limit=${{ github.event.inputs.limit }}"
-          DEBUG_SAVE_HTML=0 npm run ingest:fipi -- --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }}
+          echo "Tip: Logs include lines with 'Visiting page N (frameURL=...)' from the ingest script."
+          DEBUG_SAVE_HTML=0 npm run ingest:fipi -- --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }} | tee ingest.log
+
+      - name: Frame URLs visited (from logs)
+        run: |
+          echo "Frame URLs visited (parsed from ingest logs):"
+          if [ -f ingest.log ]; then
+            grep -E "frameURL=" ingest.log || echo "No explicit frameURL lines found."
+          else
+            echo "ingest.log not found."
+          fi
+
+      - name: Ingest summary (RAW counts per page)
+        run: |
+          echo "RAW counts per page (from ingest logs):"
+          if [ -f ingest.log ]; then
+            grep -E "Page [0-9]+ id stats" ingest.log || echo "No page stats found."
+          else
+            echo "ingest.log not found."
+          fi
 
       - name: Curate
         run: tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=2000
 
       - name: Coverage
         run: tsx scripts/fipi/report-coverage.ts
+
+      - name: MVP Gate (non-blocking)
+        if: ${{ github.event.inputs.enforceGate == 'false' }}
+        continue-on-error: true
+        run: |
+          echo "(non-blocking) Running MVP gate (2-per-subtopic for EGE basic 1..5)"
+          npm run fipi:mvp:check
+
+      - name: MVP Gate (enforced)
+        if: ${{ github.event.inputs.enforceGate == 'true' }}
+        run: npm run fipi:mvp:check
 
       - name: Save coverage summary
         if: always()
@@ -66,6 +101,66 @@ jobs:
           else
             echo "_coverage.md not found_" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Upload artifact — raw (underscore)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-raw-underscore
+          path: |
+            data/fipi/_raw/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload artifact — raw
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-raw
+          path: |
+            data/fipi/raw/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload artifact — labeled basic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-ege-basic
+          path: |
+            data/fipi/ege/basic/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload artifact — review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-review
+          path: |
+            data/fipi/_review/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload artifact — debug
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-debug
+          path: |
+            scripts/fipi/debug/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload artifact — reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-reports
+          path: |
+            scripts/fipi/reports/**
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Detect changes
         id: changes
@@ -84,6 +179,11 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "branch=$BR" >> $GITHUB_OUTPUT
           fi
+
+      - name: How to run (note)
+        run: |
+          echo "Example manual run parameters: startPage=1, endPage=10, limit=400, enforceGate=false"
+          echo "Reminder: VPN is not needed on GitHub Actions; User-Agent comes from secret INGEST_USER_AGENT."
 
       - name: Open PR
         if: steps.changes.outputs.changed == 'true'
