@@ -93,9 +93,9 @@ export async function extractRawCard(page: any): Promise<Array<{ fipiId?: string
     const d = dom.window.document
 
     // TODO: заменить на реальные селекторы карточек
-    let cards = Array.from(d.querySelectorAll('.task-card, .bank-card, .question, .item, article, .task, .b-task'))
+    let cards = Array.from(d.querySelectorAll('.task-card, .bank-card, .question, .item, article, .task, .b-task')) as HTMLElement[]
     const items: any[] = []
-    for (const el of cards) {
+    for (const el of cards as HTMLElement[]) {
       const statement = el.querySelector('.statement, .body, .content, .task-body') as HTMLElement | null
       const statement_html = statement ? statement.outerHTML : el.outerHTML
       const statement_text = (statement ? statement.textContent : el.textContent) || ''
@@ -161,9 +161,9 @@ export async function extractRawFromFrame(frame: any): Promise<Array<{ fipiId?: 
     const d = dom.window.document
 
     // Пробуем найти карточки задач внутри фрейма
-    let cards = Array.from(d.querySelectorAll('.question, .task, .b-task, .bank-card, article, .item, .q-item'))
+    let cards = Array.from(d.querySelectorAll('.question, .task, .b-task, .bank-card, article, .item, .q-item')) as HTMLElement[]
     const items: any[] = []
-    for (const el of cards) {
+    for (const el of cards as HTMLElement[]) {
       const statement = el.querySelector('.statement, .body, .content, .task-body, .q-body, .question-body') as HTMLElement | null
       const statement_html = statement ? statement.innerHTML : el.innerHTML
       const statement_text = (statement ? statement.textContent : el.textContent) || ''
