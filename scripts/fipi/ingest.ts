@@ -98,7 +98,7 @@ async function main() {
 
     // wait for iframe and get frame
     await page.waitForSelector('iframe#questions_container', { timeout: 10000 })
-    const frame = page.frames().find(f => (typeof f.name === 'function' && f.name()?.includes('questions_container')) || (typeof f.url === 'function' && f.url()?.includes('questions.php')) ) || page.frames().find(f => (f as any)._name === 'questions_container')
+    const frame = page.frames().find((f: any) => (typeof f.name === 'function' && f.name()?.includes('questions_container')) || (typeof f.url === 'function' && f.url()?.includes('questions.php')) ) || page.frames().find((f: any) => (f as any)._name === 'questions_container')
     if (!frame) throw new Error('questions_container frame not found: ' + page.url())
 
     let saved = 0
