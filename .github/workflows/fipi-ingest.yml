@@ -42,16 +42,21 @@ jobs:
         run: npm ci
 
       - name: Install Playwright (Chromium)
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
-      - name: Ingest RAW
+      - name: Ingest + Curate + Coverage
         env:
           FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
         run: |
           echo "Run ingest pages ${{ github.event.inputs.startPage }}..${{ github.event.inputs.endPage }}, limit=${{ github.event.inputs.limit }}"
+          echo "Node: $(node -v)"
+          echo "NPM:  $(npm -v)"
+          which tsx || echo "tsx not preinstalled (ok, using npx)"
           echo "Tip: Logs include lines with 'Visiting page N (frameURL=...)' from the ingest script."
-          DEBUG_SAVE_HTML=0 npm run ingest:fipi -- --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }} | tee ingest.log
+          npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }} | tee ingest.log
+          npx tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=1200
+          npx tsx scripts/fipi/report-coverage.ts
 
       - name: Frame URLs visited (from logs)
         run: |
@@ -70,12 +75,6 @@ jobs:
           else
             echo "ingest.log not found."
           fi
-
-      - name: Curate
-        run: tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=2000
-
-      - name: Coverage
-        run: tsx scripts/fipi/report-coverage.ts
 
       - name: MVP Gate (non-blocking)
         if: ${{ github.event.inputs.enforceGate == 'false' }}
@@ -102,64 +101,49 @@ jobs:
             echo "_coverage.md not found_" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload artifact — raw (underscore)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fipi-raw-underscore
-          path: |
-            data/fipi/_raw/**
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload artifact — raw
+      - name: Upload RAW
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-raw
-          path: |
-            data/fipi/raw/**
-          if-no-files-found: ignore
+          path: data/fipi/raw
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — labeled basic
+      - name: Upload labeled
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fipi-ege-basic
-          path: |
-            data/fipi/ege/basic/**
-          if-no-files-found: ignore
+          name: fipi-labeled
+          path: data/fipi/ege/basic
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — review
+      - name: Upload review
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-review
-          path: |
-            data/fipi/_review/**
-          if-no-files-found: ignore
+          path: data/fipi/_review
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — debug
+      - name: Upload debug
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-debug
-          path: |
-            scripts/fipi/debug/**
-          if-no-files-found: ignore
+          path: scripts/fipi/debug
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — reports
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-reports
-          path: |
-            scripts/fipi/reports/**
-          if-no-files-found: ignore
+          path: scripts/fipi/reports
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Detect changes
@@ -180,10 +164,11 @@ jobs:
             echo "branch=$BR" >> $GITHUB_OUTPUT
           fi
 
-      - name: How to run (note)
+      - name: How to rerun (help)
         run: |
-          echo "Example manual run parameters: startPage=1, endPage=10, limit=400, enforceGate=false"
-          echo "Reminder: VPN is not needed on GitHub Actions; User-Agent comes from secret INGEST_USER_AGENT."
+          echo "Run from Actions → FIPI Ingest (EGE basic):"
+          echo "startPage=1 endPage=10 limit=400 enforceGate=false"
+          echo "Use branch with updated workflow (or merge to main)."
 
       - name: Open PR
         if: steps.changes.outputs.changed == 'true'
