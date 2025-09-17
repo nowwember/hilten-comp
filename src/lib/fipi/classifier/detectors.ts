@@ -1,6 +1,15 @@
-import { RussianStemmer } from 'snowball-stemmers'
+// Lazy optional require to avoid hard dependency at build time (Vercel)
+function makeStemmer(): { stemWord: (w: string) => string } {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('snowball-stemmers')
+    const Stem = (mod && (mod.RussianStemmer || mod.default?.RussianStemmer)) as any
+    if (Stem) return new Stem()
+  } catch {}
+  return { stemWord: (w: string) => w }
+}
 
-const stemmer = new RussianStemmer()
+const stemmer = makeStemmer()
 
 export function normalize(text: string): string {
   const s = (text || '').toLowerCase().replace(/ё/g, 'е')
