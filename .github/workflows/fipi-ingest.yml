@@ -20,6 +20,11 @@ on:
         required: false
         type: boolean
         default: false
+      runToCoverage:
+        description: "Use run-to-coverage pipeline"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -45,6 +50,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Ingest + Curate + Coverage
+        if: ${{ github.event.inputs.runToCoverage != 'true' }}
         env:
           FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
@@ -57,6 +63,15 @@ jobs:
           npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }} | tee ingest.log
           npx tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=1200
           npx tsx scripts/fipi/report-coverage.ts
+
+      - name: Run to Coverage (batches)
+        if: ${{ github.event.inputs.runToCoverage == 'true' }}
+        env:
+          FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
+          INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
+        run: |
+          echo "Run-to-coverage mode from page ${{ github.event.inputs.startPage }} with limit/batch=${{ github.event.inputs.limit }}"
+          npx tsx scripts/fipi/run-to-coverage.ts --startPage=${{ github.event.inputs.startPage }} --pagesPerBatch=10 --maxPages=200 --limitPerBatch=${{ github.event.inputs.limit }} | tee ingest.log
 
       - name: Frame URLs visited (from logs)
         run: |
