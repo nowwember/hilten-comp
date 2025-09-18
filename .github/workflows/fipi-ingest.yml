@@ -18,8 +18,23 @@ on:
       enforceGate:
         description: "Enforce MVP gate (2 per subtopic)"
         required: false
-        type: boolean
-        default: false
+        default: "false"
+      runToCoverage:
+        description: "Use run-to-coverage pipeline"
+        required: false
+        default: "true"
+      mode:
+        description: "Ingest mode (basic|byTask)"
+        required: false
+        default: "byTask"
+      startTask:
+        description: "Start task (byTask)"
+        required: false
+        default: "1"
+      endTask:
+        description: "End task (byTask)"
+        required: false
+        default: "11"
 
 permissions:
   contents: write
@@ -28,6 +43,7 @@ permissions:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,16 +58,28 @@ jobs:
         run: npm ci
 
       - name: Install Playwright (Chromium)
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Ingest RAW
         env:
           FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
         run: |
-          echo "Run ingest pages ${{ github.event.inputs.startPage }}..${{ github.event.inputs.endPage }}, limit=${{ github.event.inputs.limit }}"
-          echo "Tip: Logs include lines with 'Visiting page N (frameURL=...)' from the ingest script."
-          DEBUG_SAVE_HTML=0 npm run ingest:fipi -- --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }} | tee ingest.log
+          echo "Mode: ${{ inputs.mode }} | Pages: ${{ inputs.startPage }}..${{ inputs.endPage }} | Limit=${{ inputs.limit }} | Tasks: ${{ inputs.startTask }}..${{ inputs.endTask }} | runToCoverage=${{ inputs.runToCoverage }}"
+          if [ "${{ inputs.mode }}" = "byTask" ]; then
+            CMD="npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --mode=byTask --startTask=${{ inputs.startTask }} --endTask=${{ inputs.endTask }} --startPage=${{ inputs.startPage }} --endPage=${{ inputs.endPage }} --limit=${{ inputs.limit }}"
+            if [ "${{ inputs.runToCoverage }}" = "true" ]; then CMD="$CMD --runToCoverage"; fi
+            echo "$CMD"; eval "$CMD" | tee ingest.log
+          else
+            CMD="npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --mode=basic --startPage=${{ inputs.startPage }} --endPage=${{ inputs.endPage }} --limit=${{ inputs.limit }}"
+            echo "$CMD"; eval "$CMD" | tee ingest.log
+          fi
+
+      - name: Curate
+        run: npx tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=2000
+
+      - name: Coverage
+        run: npx tsx scripts/fipi/report-coverage.ts --exam=ege --level=basic
 
       - name: Frame URLs visited (from logs)
         run: |
@@ -71,21 +99,8 @@ jobs:
             echo "ingest.log not found."
           fi
 
-      - name: Curate
-        run: tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=2000
-
-      - name: Coverage
-        run: tsx scripts/fipi/report-coverage.ts
-
-      - name: MVP Gate (non-blocking)
-        if: ${{ github.event.inputs.enforceGate == 'false' }}
-        continue-on-error: true
-        run: |
-          echo "(non-blocking) Running MVP gate (2-per-subtopic for EGE basic 1..5)"
-          npm run fipi:mvp:check
-
-      - name: MVP Gate (enforced)
-        if: ${{ github.event.inputs.enforceGate == 'true' }}
+      - name: MVP gate
+        if: ${{ inputs.enforceGate == 'true' }}
         run: npm run fipi:mvp:check
 
       - name: Save coverage summary
@@ -102,103 +117,104 @@ jobs:
             echo "_coverage.md not found_" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload artifact — raw (underscore)
+      - name: Run instructions (echo)
+        if: always()
+        run: |
+          echo "Run (byTask):"
+          echo "- Start task: 1"
+          echo "- End task: 11"
+          echo "- Start page: ${{ github.event.inputs.startPage }}"
+          echo "- End page: ${{ github.event.inputs.endPage }}"
+          echo "- Limit: ${{ github.event.inputs.limit }}"
+          echo "- runToCoverage: ${{ github.event.inputs.runToCoverage }}"
+          echo "- enforceGate: ${{ github.event.inputs.enforceGate }}"
+          echo "Artifacts: RAW (data/fipi/_raw), labeled (data/fipi/ege/basic), reports (scripts/fipi/reports), debug (scripts/fipi/debug)"
+
+      - name: Upload RAW (_raw)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fipi-raw-underscore
-          path: |
-            data/fipi/_raw/**
-          if-no-files-found: ignore
+          name: fipi-_raw
+          path: data/fipi/_raw/**/*
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — raw
+      - name: Upload RAW (raw)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-raw
-          path: |
-            data/fipi/raw/**
-          if-no-files-found: ignore
+          path: data/fipi/raw
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — labeled basic
+      - name: Upload labeled
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fipi-ege-basic
-          path: |
-            data/fipi/ege/basic/**
-          if-no-files-found: ignore
+          name: fipi-labeled
+          path: data/fipi/ege/basic
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — review
+      - name: Upload review
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-review
-          path: |
-            data/fipi/_review/**
-          if-no-files-found: ignore
+          path: data/fipi/_review
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — debug
+      - name: Upload debug
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-debug
-          path: |
-            scripts/fipi/debug/**
-          if-no-files-found: ignore
+          path: scripts/fipi/debug
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload artifact — reports
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-reports
-          path: |
-            scripts/fipi/reports/**
-          if-no-files-found: ignore
+          path: scripts/fipi/reports
+          if-no-files-found: warn
           retention-days: 7
 
-      - name: Detect changes
-        id: changes
+      - name: Create Pull Request
+        if: ${{ github.ref_name != 'main' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "FIPI ingest run (mode=${{ inputs.mode }})"
+          commit-message: "chore(fipi): ingest artifacts"
+          add-paths: |
+            data/**
+            public/fipi/**
+          base: main
+
+      - name: Commit changes (if any)
+        if: ${{ inputs.enforceGate != 'true' }}
         run: |
-          git config user.name "github-actions[bot]"
+          set -e
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          ts=$(date +%Y%m%d-%H%M%S)
-          BR="fipi-update/$ts"
-          git checkout -b "$BR"
           git add -A
           if git diff --cached --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            git commit -m "FIPI ingest update: $ts"
-            git push --set-upstream origin "$BR"
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "branch=$BR" >> $GITHUB_OUTPUT
+            echo "No changes to commit."
+            exit 0
           fi
+          git commit -m "chore(fipi): ingest $(date -u +%Y%m%d%H%M)"
+          git push origin HEAD:${{ github.ref_name }}
 
-      - name: How to run (note)
+      - name: How to rerun (help)
         run: |
-          echo "Example manual run parameters: startPage=1, endPage=10, limit=400, enforceGate=false"
-          echo "Reminder: VPN is not needed on GitHub Actions; User-Agent comes from secret INGEST_USER_AGENT."
+          echo "Run from Actions → FIPI Ingest (EGE basic):"
+          echo "startPage=1 endPage=10 limit=400 enforceGate=false"
+          echo "Use branch with updated workflow (or merge to main)."
 
-      - name: Open PR
-        if: steps.changes.outputs.changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const branch = core.getInput('branch') || '${{ steps.changes.outputs.branch }}'
-            const { data: pr } = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `FIPI ingest update (${branch})`,
-              head: branch,
-              base: context.ref.replace('refs/heads/',''),
-              body: 'Auto-generated ingest/curate/coverage update.'
-            })
-            core.setOutput('pr', pr.html_url)
+      # PR creation skipped in this hardened flow; push goes to current ref
 
 
