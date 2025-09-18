@@ -18,17 +18,23 @@ on:
       enforceGate:
         description: "Enforce MVP gate (2 per subtopic)"
         required: false
-        type: boolean
-        default: false
+        default: "false"
       runToCoverage:
         description: "Use run-to-coverage pipeline"
         required: false
-        type: boolean
-        default: false
+        default: "true"
       mode:
         description: "Ingest mode (basic|byTask)"
         required: false
         default: "byTask"
+      startTask:
+        description: "Start task (byTask)"
+        required: false
+        default: "1"
+      endTask:
+        description: "End task (byTask)"
+        required: false
+        default: "11"
 
 permissions:
   contents: write
@@ -54,45 +60,26 @@ jobs:
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
-      - name: Ingest + Curate + Coverage (basic)
-        if: ${{ github.event.inputs.runToCoverage != 'true' && github.event.inputs.mode != 'byTask' }}
+      - name: Ingest RAW
         env:
           FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
         run: |
-          echo "Run ingest pages ${{ github.event.inputs.startPage }}..${{ github.event.inputs.endPage }}, limit=${{ github.event.inputs.limit }}"
-          echo "Node: $(node -v)"
-          echo "NPM:  $(npm -v)"
-          which tsx || echo "tsx not preinstalled (ok, using npx)"
-          echo "Tip: Logs include lines with 'Visiting page N (frameURL=...)' from the ingest script."
-          npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --startPage=${{ github.event.inputs.startPage }} --endPage=${{ github.event.inputs.endPage }} --limit=${{ github.event.inputs.limit }} | tee ingest.log
-          npx tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=1200
-          npx tsx scripts/fipi/report-coverage.ts
+          echo "Mode: ${{ inputs.mode }} | Pages: ${{ inputs.startPage }}..${{ inputs.endPage }} | Limit=${{ inputs.limit }} | Tasks: ${{ inputs.startTask }}..${{ inputs.endTask }} | runToCoverage=${{ inputs.runToCoverage }}"
+          if [ "${{ inputs.mode }}" = "byTask" ]; then
+            CMD="npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --mode=byTask --startTask=${{ inputs.startTask }} --endTask=${{ inputs.endTask }} --startPage=${{ inputs.startPage }} --endPage=${{ inputs.endPage }} --limit=${{ inputs.limit }}"
+            if [ "${{ inputs.runToCoverage }}" = "true" ]; then CMD="$CMD --runToCoverage"; fi
+            echo "$CMD"; eval "$CMD" | tee ingest.log
+          else
+            CMD="npx tsx scripts/fipi/ingest.ts --exam=ege --level=basic --mode=basic --startPage=${{ inputs.startPage }} --endPage=${{ inputs.endPage }} --limit=${{ inputs.limit }}"
+            echo "$CMD"; eval "$CMD" | tee ingest.log
+          fi
 
-      - name: Run to Coverage (batches)
-        if: ${{ github.event.inputs.runToCoverage == 'true' && github.event.inputs.mode != 'byTask' }}
-        env:
-          FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
-          INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
-        run: |
-          echo "Run-to-coverage mode from page ${{ github.event.inputs.startPage }} with limit/batch=${{ github.event.inputs.limit }}"
-          npx tsx scripts/fipi/run-to-coverage.ts --startPage=${{ github.event.inputs.startPage }} --pagesPerBatch=10 --maxPages=200 --limitPerBatch=${{ github.event.inputs.limit }} | tee ingest.log
+      - name: Curate
+        run: npx tsx scripts/fipi/curate.ts --exam=ege --level=basic --limit=2000
 
-      - name: Ingest by Task (byTask mode)
-        if: ${{ github.event.inputs.mode == 'byTask' }}
-        env:
-          FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
-          INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
-          START_TASK: 1
-          END_TASK: 11
-          START_PAGE: ${{ github.event.inputs.startPage }}
-          END_PAGE: ${{ github.event.inputs.endPage }}
-          LIMIT: ${{ github.event.inputs.limit }}
-          EXAM: ege
-          LEVEL: basic
-        run: |
-          echo "Mode byTask: tasks 1..11, pages ${{ github.event.inputs.startPage }}..${{ github.event.inputs.endPage }}, limit=${{ github.event.inputs.limit }}"
-          npx tsx scripts/fipi/ingest-by-task.ts | tee ingest.log
+      - name: Coverage
+        run: npx tsx scripts/fipi/report-coverage.ts --exam=ege --level=basic
 
       - name: Frame URLs visited (from logs)
         run: |
@@ -143,12 +130,21 @@ jobs:
           echo "- enforceGate: ${{ github.event.inputs.enforceGate }}"
           echo "Artifacts: RAW (data/fipi/_raw), labeled (data/fipi/ege/basic), reports (scripts/fipi/reports), debug (scripts/fipi/debug)"
 
-      - name: Upload RAW
+      - name: Upload RAW (_raw)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fipi-_raw
+          path: data/fipi/_raw/**/*
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload RAW (raw)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fipi-raw
-          path: data/fipi/_raw/**/*
+          path: data/fipi/raw
           if-no-files-found: warn
           retention-days: 7
 
@@ -187,6 +183,17 @@ jobs:
           path: scripts/fipi/reports
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Create Pull Request
+        if: ${{ github.ref_name != 'main' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "FIPI ingest run (mode=${{ inputs.mode }})"
+          commit-message: "chore(fipi): ingest artifacts"
+          add-paths: |
+            data/**
+            public/fipi/**
+          base: main
 
       - name: Commit changes (if any)
         if: ${{ inputs.enforceGate != 'true' }}
