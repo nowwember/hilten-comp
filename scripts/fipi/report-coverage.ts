@@ -13,16 +13,31 @@ import * as taxonomyJson from '../../src/lib/fipi/taxonomy/ege-basic.json'
 
 type CountKey = string // `${taskNo}::${subtopic}`
 
-// Count json files directly in data directory for each (taskNo, subtopic)
-function countByPath(dataRoot: string, taskNo: number, subtopic: string): number {
-  const dir = path.join(dataRoot, String(taskNo), subtopic)
-  if (!fs.existsSync(dir)) return 0
-  const ents = fs.readdirSync(dir, { withFileTypes: true })
-  let n = 0
-  for (const e of ents) {
-    if (e.isFile() && e.name.endsWith('.json')) n++
+// Recursively list all json files under dir
+function listJsonFiles(dir: string): string[] {
+  const out: string[] = []
+  function walk(d: string) {
+    const ents = fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []
+    for (const e of ents) {
+      const p = path.join(d, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (e.isFile() && e.name.endsWith('.json')) out.push(p)
+    }
   }
-  return n
+  walk(dir)
+  return out
+}
+
+function inferFromPath(filePath: string): { taskNo: number | null; subtopic: string | null } {
+  const parts = filePath.split(path.sep)
+  const idx = parts.findIndex((x) => x === 'basic')
+  if (idx >= 0) {
+    const taskStr = parts[idx + 1]
+    const subtopic = parts[idx + 2] || null
+    const taskNo = Number(taskStr)
+    return { taskNo: Number.isFinite(taskNo) ? taskNo : null, subtopic }
+  }
+  return { taskNo: null, subtopic: null }
 }
 
 function ensureDirSync(dir: string) {
@@ -41,14 +56,38 @@ async function main() {
     .filter((n) => Number.isFinite(n))
     .sort((a, b) => a - b)
 
-  // Build per task grouping using direct path counts, target per subtopic = 2
+  // Collect counts by scanning labeled jsons and reading taskNo/subtopic from JSON (prefer) else path
+  const labeledRoot = path.join(process.cwd(), 'data', 'fipi', 'ege', 'basic')
+  const reviewRoot = path.join(process.cwd(), 'data', 'fipi', '_review', 'ege', 'basic')
+  const labeledFiles = listJsonFiles(labeledRoot)
+  // reviewFiles are read (glob existence) but not contributing to coverage counts for now
+  void listJsonFiles(reviewRoot)
+
+  const counts = new Map<string, number>() // key: `${taskNo}::${subtopic}`
+  for (const file of labeledFiles) {
+    try {
+      const j = JSON.parse(fs.readFileSync(file, 'utf8'))
+      let taskNo: number | null = typeof j.taskNo === 'number' ? j.taskNo : null
+      let subtopic: string | null = (typeof j.subtopic === 'string' && j.subtopic) ? j.subtopic : null
+      if (taskNo == null || !subtopic) {
+        const inf = inferFromPath(file)
+        if (taskNo == null) taskNo = inf.taskNo
+        if (!subtopic) subtopic = inf.subtopic
+      }
+      if (taskNo && subtopic) {
+        const key = `${taskNo}::${subtopic}`
+        counts.set(key, (counts.get(key) || 0) + 1)
+      }
+    } catch {}
+  }
+
+  // Build per task grouping based on taxonomy keys
   const byTask = new Map<number, Array<{ subtopic: string; have: number; need: number }>>()
   for (const t of taskNos) {
     const subtopics = taxonomy[String(t)]?.subtopics || {}
-    const subtopicKeys = Object.keys(subtopics)
     const rows: Array<{ subtopic: string; have: number; need: number }> = []
-    for (const s of subtopicKeys) {
-      const have = countByPath(dataRoot, t, s)
+    for (const s of Object.keys(subtopics)) {
+      const have = counts.get(`${t}::${s}`) || 0
       const need = Math.max(0, 2 - have)
       rows.push({ subtopic: s, have, need })
     }
