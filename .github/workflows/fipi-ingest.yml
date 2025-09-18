@@ -25,6 +25,10 @@ on:
         required: false
         type: boolean
         default: false
+      mode:
+        description: "Ingest mode (basic|byTask)"
+        required: false
+        default: "byTask"
 
 permissions:
   contents: write
@@ -50,8 +54,8 @@ jobs:
       - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
-      - name: Ingest + Curate + Coverage
-        if: ${{ github.event.inputs.runToCoverage != 'true' }}
+      - name: Ingest + Curate + Coverage (basic)
+        if: ${{ github.event.inputs.runToCoverage != 'true' && github.event.inputs.mode != 'byTask' }}
         env:
           FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
@@ -66,13 +70,29 @@ jobs:
           npx tsx scripts/fipi/report-coverage.ts
 
       - name: Run to Coverage (batches)
-        if: ${{ github.event.inputs.runToCoverage == 'true' }}
+        if: ${{ github.event.inputs.runToCoverage == 'true' && github.event.inputs.mode != 'byTask' }}
         env:
           FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
           INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
         run: |
           echo "Run-to-coverage mode from page ${{ github.event.inputs.startPage }} with limit/batch=${{ github.event.inputs.limit }}"
           npx tsx scripts/fipi/run-to-coverage.ts --startPage=${{ github.event.inputs.startPage }} --pagesPerBatch=10 --maxPages=200 --limitPerBatch=${{ github.event.inputs.limit }} | tee ingest.log
+
+      - name: Ingest by Task (byTask mode)
+        if: ${{ github.event.inputs.mode == 'byTask' }}
+        env:
+          FIPI_EGE_BASIC_START: ${{ secrets.FIPI_EGE_BASIC_START }}
+          INGEST_USER_AGENT: ${{ secrets.INGEST_USER_AGENT }}
+          START_TASK: 1
+          END_TASK: 11
+          START_PAGE: ${{ github.event.inputs.startPage }}
+          END_PAGE: ${{ github.event.inputs.endPage }}
+          LIMIT: ${{ github.event.inputs.limit }}
+          EXAM: ege
+          LEVEL: basic
+        run: |
+          echo "Mode byTask: tasks 1..11, pages ${{ github.event.inputs.startPage }}..${{ github.event.inputs.endPage }}, limit=${{ github.event.inputs.limit }}"
+          npx tsx scripts/fipi/ingest-by-task.ts | tee ingest.log
 
       - name: Frame URLs visited (from logs)
         run: |
