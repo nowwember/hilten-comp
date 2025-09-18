@@ -15,10 +15,14 @@ export async function setTaskNumber(frame: Frame, taskNo: number) {
       const tag = await el?.evaluate((n) => (n as HTMLElement).tagName.toLowerCase())
       if (tag === 'select') {
         await (select as any).selectOption?.({ label: String(taskNo), value: String(taskNo) }).catch(async () => {
-          await frame.evaluate((node: any, v: string) => { node.value = v; node.dispatchEvent(new Event('change')) }, el, String(taskNo))
+          if (el) {
+            await el.evaluate((node: any, v: string) => { (node as HTMLSelectElement).value = v; node.dispatchEvent(new Event('change')) }, String(taskNo))
+          }
         })
       } else {
-        await select.fill(String(taskNo)).catch(async () => { await frame.evaluate((node:any,v:string)=>{node.value=v}, el, String(taskNo)) })
+        await select.fill(String(taskNo)).catch(async () => {
+          if (el) { await el.evaluate((node:any,v:string)=>{ (node as HTMLInputElement).value = v }, String(taskNo)) }
+        })
       }
     }
   } catch {}
