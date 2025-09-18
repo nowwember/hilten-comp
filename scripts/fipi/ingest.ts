@@ -137,10 +137,11 @@ async function main() {
             const statement_html = sanitizeHtml(it.statement_html || '')
             const statement_text = (it.statement_text || '').trim()
             const checksum = sha256Hex(statement_html)
-            const fipiId = it.fipiId
-            const outFile = rawTaskPageFilePath('ege','basic',taskNo,p,fipiId)
+            const fipiIdRaw = it.fipiId
+            const safeId = fipiIdRaw && typeof fipiIdRaw === 'string' && fipiIdRaw.length > 0 ? fipiIdRaw : `hx-${checksum.slice(0,12)}`
+            const outFile = rawTaskPageFilePath('ege','basic',taskNo,p,safeId)
             ensureDirSync(path.dirname(outFile))
-            const data = { exam: 'ege', level: 'basic', taskNo, fipiId, idSynthetic: !!it.idSynthetic, idMethod: it.idMethod || 'unknown', statement_html, statement_text, assets, answer: null as any, source_url: it.source_url || START, accessed_at, checksum }
+            const data = { exam: 'ege', level: 'basic', taskNo, fipiId: safeId, idSynthetic: !!it.idSynthetic || !fipiIdRaw, idMethod: it.idMethod || (fipiIdRaw ? 'unknown' : 'hash'), statement_html, statement_text, assets, answer: null as any, source_url: it.source_url || START, accessed_at, checksum }
             try { await fs.promises.access(outFile) }
             catch { await writeJsonPretty(outFile, data); savedTask++; savedTotal++ }
           }
