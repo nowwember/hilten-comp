@@ -18,11 +18,13 @@ on:
       enforceGate:
         description: "Enforce MVP gate (2 per subtopic)"
         required: false
-        default: "false"
+        type: boolean
+        default: false
       runToCoverage:
         description: "Use run-to-coverage pipeline"
         required: false
-        default: "true"
+        type: boolean
+        default: true
       mode:
         description: "Ingest mode (basic|byTask)"
         required: false
@@ -80,6 +82,11 @@ jobs:
 
       - name: Coverage
         run: npx tsx scripts/fipi/report-coverage.ts --exam=ege --level=basic
+
+      - name: MVP gate (non-blocking)
+        if: ${{ inputs.enforceGate != 'true' }}
+        continue-on-error: true
+        run: npm run fipi:mvp:check
 
       - name: Frame URLs visited (from logs)
         run: |
@@ -144,7 +151,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fipi-raw
-          path: data/fipi/raw
+          path: data/fipi/raw/**/*
           if-no-files-found: warn
           retention-days: 7
 
