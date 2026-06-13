@@ -42,7 +42,7 @@ interface PracticeTask {
 export default function TopicPage() {
   const router = useRouter();
   const { exam, taskNumber, topic, mode } = router.query;
-  
+
   const [isTheoryExpanded, setIsTheoryExpanded] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [explanations, setExplanations] = useState<Record<number, string>>({});
@@ -54,11 +54,11 @@ export default function TopicPage() {
     errors: Array<{ number: number; correctAnswer: string }>;
   } | null>(null);
   const [loadingExplanations, setLoadingExplanations] = useState<Record<number, boolean>>({});
-  
+
   if (!exam || !taskNumber || !topic || typeof exam !== 'string' || typeof taskNumber !== 'string' || typeof topic !== 'string') {
     return (
       <TaskLayout title="Тема не найдена">
-        <div className="text-center text-slate-500">Тема не найдена</div>
+        <div className="text-center" style={{ color: 'var(--ink-soft)' }}>Тема не найдена</div>
       </TaskLayout>
     );
   }
@@ -77,11 +77,11 @@ export default function TopicPage() {
   const examConfig = getExam(exam as ExamId, currentMode);
   const taskConfig = examConfig.tasks.find(task => task.number === parseInt(taskNumber));
   const decodedTopic = decodeURIComponent(topic);
-  
+
   if (!examConfig || !taskConfig || !taskConfig.topics.includes(decodedTopic)) {
     return (
       <TaskLayout title="Тема не найдена">
-        <div className="text-center text-slate-500">Тема не найдена</div>
+        <div className="text-center" style={{ color: 'var(--ink-soft)' }}>Тема не найдена</div>
       </TaskLayout>
     );
   }
@@ -128,34 +128,34 @@ export default function TopicPage() {
         {/* Заголовок темы */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
           <div className="flex items-center gap-4">
-            <BookOpenIcon className="h-8 w-8 text-slate-500" />
+            <BookOpenIcon className="h-8 w-8" style={{ color: 'var(--ink-soft)' }} />
             <div>
-              <h1 className="text-3xl font-bold">№{taskNumber}. {capitalizeRu(decodedTopic)}</h1>
-              <p className="text-slate-600 dark:text-slate-400">Теория и практика по теме для подготовки к {examConfig.name}</p>
+              <h1 className="font-display text-3xl font-bold" style={{ color: 'var(--ink)' }}>№{taskNumber}. {capitalizeRu(decodedTopic)}</h1>
+              <p style={{ color: 'var(--ink-soft)' }}>Теория и практика по теме для подготовки к {examConfig.name}</p>
             </div>
           </div>
         </motion.div>
 
         {/* Сворачиваемый блок теории */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-neutral-50 dark:bg-slate-900/50 border rounded-xl overflow-hidden">
-          <button onClick={() => setIsTheoryExpanded(!isTheoryExpanded)} className="w-full p-6 flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-slate-800/50 transition">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-[var(--radius)] overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
+          <button onClick={() => setIsTheoryExpanded(!isTheoryExpanded)} className="w-full p-6 flex items-center justify-between hover:bg-[var(--paper-2)] transition">
             <div className="flex items-center gap-3">
-              <LightBulbIcon className="h-6 w-6 text-slate-500" />
-              <h2 className="text-xl font-semibold">Теория по теме</h2>
+              <LightBulbIcon className="h-6 w-6" style={{ color: 'var(--ink-soft)' }} />
+              <h2 className="text-xl font-semibold" style={{ color: 'var(--ink)' }}>Теория по теме</h2>
             </div>
             {isTheoryExpanded ? (
-              <ChevronUpIcon className="h-5 w-5 text-slate-500" />
+              <ChevronUpIcon className="h-5 w-5" style={{ color: 'var(--ink-soft)' }} />
             ) : (
-              <ChevronDownIcon className="h-5 w-5 text-slate-500" />
+              <ChevronDownIcon className="h-5 w-5" style={{ color: 'var(--ink-soft)' }} />
             )}
           </button>
           {isTheoryExpanded && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="px-6 pb-6 space-y-4">
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Основные понятия</h3>
+                  <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--ink)' }}>Основные понятия</h3>
                   <MathRenderer markdown={normalizeMathMarkdown(`Здесь будет размещена теоретическая информация по теме "${decodedTopic}". Формула Байеса: $$P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$$`)} />
-                  <button className="mt-2 px-3 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition" onClick={() => router.push(`/whiteboard?taskId=${exam}-${taskNumber}`)}>Открыть на доске</button>
+                  <button className="btn-ghost mt-2 px-3 py-1 rounded-xl hover:bg-[var(--paper-2)] transition" onClick={() => router.push(`/whiteboard?taskId=${exam}-${taskNumber}`)}>Открыть на доске</button>
                 </div>
               </div>
             </motion.div>
@@ -164,19 +164,19 @@ export default function TopicPage() {
 
         {/* Практические задачи */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
+          <h2 className="font-display text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--ink)' }}>
             <AcademicCapIcon className="h-6 w-6" />
             Практика
           </h2>
           <div className="space-y-6">
             {practiceTasks.map((task, index) => (
-              <motion.div key={task.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + index * 0.1 }} className="bg-white border rounded-xl shadow p-6 space-y-4">
+              <motion.div key={task.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + index * 0.1 }} className="rounded-[var(--radius)] p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-lg font-semibold text-slate-700 dark:text-slate-300">№{task.number}</span>
+                      <span className="font-mono text-lg font-semibold" style={{ color: 'var(--ink)' }}>№{task.number}</span>
                     </div>
-                    <p className="text-slate-700 dark:text-slate-300 mb-4">{task.content}</p>
+                    <p className="mb-4" style={{ color: 'var(--ink)' }}>{task.content}</p>
                   </div>
                 </div>
                 <AnswerPanel
@@ -194,46 +194,46 @@ export default function TopicPage() {
 
         {/* Кнопка проверки */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex justify-center pt-6">
-          <button onClick={handleCheckAnswers} disabled={isChecking} className="px-8 py-4 rounded-xl text-white gradient-accent shadow-soft text-lg font-medium hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={handleCheckAnswers} disabled={isChecking} className="btn-primary px-8 py-4 rounded-xl text-lg font-medium hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed">
             {isChecking ? 'Проверяем...' : 'Проверить'}
           </button>
         </motion.div>
 
         {/* Результаты проверки */}
         {results && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-neutral-50 dark:bg-slate-900/50 border rounded-xl p-6 space-y-4">
-            <h3 className="text-xl font-semibold flex items-center gap-2">
-              <CheckCircleIcon className="h-6 w-6 text-green-500" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[var(--radius)] p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
+            <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+              <CheckCircleIcon className="h-6 w-6" style={{ color: 'var(--green-deep)' }} />
               Результаты проверки
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-slate-700 dark:text-slate-300">{results.total}</div>
-                <div className="text-sm text-slate-500">Всего задач</div>
+                <div className="font-mono text-2xl font-bold" style={{ color: 'var(--ink)' }}>{results.total}</div>
+                <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Всего задач</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{results.solved}</div>
-                <div className="text-sm text-slate-500">Решено</div>
+                <div className="font-mono text-2xl font-bold" style={{ color: 'var(--amber-deep)' }}>{results.solved}</div>
+                <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Решено</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{results.correct}</div>
-                <div className="text-sm text-slate-500">Правильно</div>
+                <div className="font-mono text-2xl font-bold" style={{ color: 'var(--green-deep)' }}>{results.correct}</div>
+                <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Правильно</div>
               </div>
             </div>
-            
+
             {results.errors.length > 0 && (
               <div className="space-y-3">
-                <h4 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <XCircleIcon className="h-5 w-5 text-red-500" />
+                <h4 className="font-medium flex items-center gap-2" style={{ color: 'var(--ink)' }}>
+                  <XCircleIcon className="h-5 w-5" style={{ color: 'var(--red)' }} />
                   Задачи с ошибками:
                 </h4>
                 <div className="space-y-2">
                   {results.errors.map((error, index) => (
                     <div key={index} className="flex items-center gap-3 text-sm">
-                      <span className="font-medium">№{error.number}:</span>
-                      <span className="text-slate-600 dark:text-slate-400">
-                        Правильный ответ: <span className="font-medium text-green-600">{error.correctAnswer}</span>
+                      <span className="font-medium" style={{ color: 'var(--ink)' }}>№{error.number}:</span>
+                      <span style={{ color: 'var(--ink-soft)' }}>
+                        Правильный ответ: <span className="font-medium" style={{ color: 'var(--green-deep)' }}>{error.correctAnswer}</span>
                       </span>
                     </div>
                   ))}
@@ -245,8 +245,8 @@ export default function TopicPage() {
 
         {/* Кнопки действий */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex flex-col sm:flex-row gap-4 pt-6">
-          <Link href={`/whiteboard?taskId=${exam}-${taskNumber}&topic=${encodeURIComponent(decodedTopic)}${mode ? `&mode=${mode}` : ''}`} className="flex-1 py-4 px-6 rounded-xl text-white gradient-accent shadow-soft text-center font-medium hover:shadow-lg transition-shadow">Открыть доску для практики</Link>
-          <Link href={`/tasks?topic=${encodeURIComponent(decodedTopic)}`} className="flex-1 py-4 px-6 rounded-xl border text-center font-medium hover:bg-slate-50 dark:hover:bg-slate-900 transition">Больше задач по теме</Link>
+          <Link href={`/whiteboard?taskId=${exam}-${taskNumber}&topic=${encodeURIComponent(decodedTopic)}${mode ? `&mode=${mode}` : ''}`} className="btn-primary flex-1 py-4 px-6 rounded-xl text-center font-medium hover:shadow-lg transition-shadow">Открыть доску для практики</Link>
+          <Link href={`/tasks?topic=${encodeURIComponent(decodedTopic)}`} className="btn-ghost flex-1 py-4 px-6 rounded-xl text-center font-medium hover:bg-[var(--paper-2)] transition">Больше задач по теме</Link>
         </motion.div>
       </div>
     </TaskLayout>

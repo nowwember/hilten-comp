@@ -35,12 +35,10 @@ export default function SortByDifficultyButton({
       type="button"
       onClick={cycle}
       aria-label="Сортировать по сложности"
-      className={cn('px-4 py-2 rounded-xl border hover:bg-slate-900/5 dark:hover:bg-white/5 transition inline-flex items-center gap-2', className)}
+      className={cn('btn-ghost px-4 py-2 rounded-xl transition inline-flex items-center gap-2 hover:bg-[var(--paper-2)]', className)}
     >
       {icon}
       <span>{label}</span>
     </button>
   );
 }
-
-

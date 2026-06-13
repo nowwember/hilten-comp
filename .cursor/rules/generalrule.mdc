@@ -1,6 +1,16 @@
 ---
 description: [PCB]
-    Название/брендинг: "ХилтэнКомп" — "Хилтэн" (красные тона), "Комп" (желтые тона). Стиль: минимализм как plonq.ru (гладкие hover, скругления, чистая типографика), без затемнения экрана при модалках (если не оговорено).
+    Название/брендинг: "ХилтэнКомп" — "Хилтэн" (красный #E63E2B) + "Комп" (амбер #F5A524), фирменный градиент var(--brand) (linear-gradient 100deg, #E63E2B → #EE6A1E → #F5A524). Стиль: минимализм как plonq.ru (гладкие hover, скругления, чистая типографика), без затемнения экрана при модалках (если не оговорено).
+
+    Дизайн-токены (источник правды — src/styles/globals.css):
+    --paper, --paper-2, --surface, --ink, --ink-soft, --red, --red-deep, --amber, --amber-deep,
+    --green, --green-deep, --line, --line-2, --brand, --radius, --radius-lg.
+    Светлая/тёмная темы переключаются через класс .dark (без data-атрибутов).
+
+    Шрифты: Unbounded (display, --font-display), Onest (body, --font-body),
+    JetBrains Mono (mono, --font-mono) — через next/font/google, subsets latin+cyrillic.
+
+    Старая палитра Aurora (cyan #22D3EE / violet #818CF8) полностью удалена.
 
 Стек:
 - Frontend: Next.js (React + TypeScript), TailwindCSS

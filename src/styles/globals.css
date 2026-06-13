@@ -2,39 +2,183 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light dark; }
+/* ═══════════════════════════════════════════════════
+   CSS Design Tokens — Хилтэн/Комп
+   ═══════════════════════════════════════════════════ */
 
-/* Шрифты */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root {
+  color-scheme: light dark;
+
+  --paper: #FBF6EE;
+  --paper-2: #F3EADB;
+  --surface: #FFFFFF;
+  --ink: #1C1714;
+  --ink-soft: #79695E;
+
+  --red: #E63E2B;
+  --red-deep: #C12A1B;
+  --amber: #F5A524;
+  --amber-deep: #DE8400;
+  --green: #639922;
+  --green-deep: #4A7016;
+
+  --line: rgba(28, 23, 20, .08);
+  --line-2: rgba(28, 23, 20, .14);
+
+  --brand: linear-gradient(100deg, #E63E2B 0%, #EE6A1E 48%, #F5A524 100%);
+
+  --radius: 16px;
+  --radius-lg: 20px;
+}
+
+.dark {
+  --paper: #181310;
+  --paper-2: #221A15;
+  --surface: #241C16;
+  --ink: #F3E8DB;
+  --ink-soft: #AD9784;
+
+  --red: #FF5A45;
+  --red-deep: #FF7A66;
+  --amber: #FFB23E;
+  --amber-deep: #FFC56B;
+  --green: #8FCB4B;
+  --green-deep: #A6D86B;
+
+  --line: rgba(255, 240, 225, .09);
+  --line-2: rgba(255, 240, 225, .16);
+}
+
+/* ═══════════════════════════════════════════════════
+   Base
+   ═══════════════════════════════════════════════════ */
 
 html {
   @apply scroll-smooth;
 }
 
 body {
-  @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  @apply antialiased;
 }
 
-/* Базовые скругления для интерактивных элементов */
+/* Базовые скругления */
 button, input, textarea, select, .card {
   @apply rounded-xl;
 }
 
-/* Градиентные акценты */
-.gradient-accent {
-  background-image: linear-gradient(135deg, theme(colors.brand.500), theme(colors.accent.600));
+/* ═══════════════════════════════════════════════════
+   Утилиты дизайн-системы
+   ═══════════════════════════════════════════════════ */
+
+.grad-text {
+  background: var(--brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-/* Эффект стеклянного хедера */
-.glass {
-  @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur;
+.grid-bg {
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 30px 30px;
 }
 
-/* Hero фон мягкий */
-.hero-bg {
-  background: radial-gradient(1200px 600px at 80% -20%, rgba(124, 92, 255, 0.15), transparent),
-              radial-gradient(1000px 500px at -20% 0%, rgba(42, 169, 255, 0.15), transparent);
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 10px 26px -10px rgba(230, 62, 43, .6);
 }
 
-/* Excalidraw styles - закомментировано для избежания 404 ошибок */
-/* @import url('https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css'); */
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--line-2);
+}
+
+.btn-sm {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 10px;
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(99, 153, 34, .6);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(99, 153, 34, .5); }
+  70% { box-shadow: 0 0 0 6px rgba(99, 153, 34, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 153, 34, 0); }
+}
+
+.badge {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 11px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.b-easy {
+  background: rgba(99, 153, 34, .15);
+  color: var(--green-deep);
+}
+
+.b-med {
+  background: rgba(245, 165, 36, .18);
+  color: var(--amber-deep);
+}
+
+.b-hard {
+  background: rgba(230, 62, 43, .13);
+  color: var(--red-deep);
+}
+
+/* ═══════════════════════════════════════════════════
+   Math Rendering (KaTeX / MathJax)
+   ═══════════════════════════════════════════════════ */
+
+.dark .MathJax,
+.dark .MathJax svg,
+.dark .katex,
+.dark .katex .base,
+.dark .math-content,
+.dark .math-content svg {
+  color: var(--ink) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   Scrollbar
+   ═══════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-soft);
+}

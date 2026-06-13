@@ -5,8 +5,42 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import SortByDifficultyButton, { SortMode } from '@/components/SortByDifficultyButton';
 import DifficultySelect from '@/components/DifficultySelect';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const fadeUp = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } };
+
+const DIFFICULTY_BADGE: Record<string, string> = {
+  EASY: 'b-easy',
+  MEDIUM: 'b-med',
+  HARD: 'b-hard',
+};
+
+const DIFFICULTY_LABEL: Record<string, string> = {
+  EASY: 'Легко',
+  MEDIUM: 'Средне',
+  HARD: 'Сложно',
+};
+
+function inputStyle() {
+  return {
+    backgroundColor: 'var(--surface)',
+    borderColor: 'var(--line-2)',
+    color: 'var(--ink)',
+  } as React.CSSProperties;
+}
+
+function focusRing(e: React.FocusEvent<HTMLElement>) {
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(230,62,43,.14)';
+  e.currentTarget.style.borderColor = 'var(--red)';
+}
+
+function blurRing(e: React.FocusEvent<HTMLElement>) {
+  e.currentTarget.style.boxShadow = 'none';
+  e.currentTarget.style.borderColor = 'var(--line-2)';
+}
 
 export default function Tasks() {
   const { data: session } = useSession();
@@ -51,62 +85,81 @@ export default function Tasks() {
     <>
       <div className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Тема" className="border px-4 py-3 bg-transparent flex-1 rounded-xl" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Тема"
+            className="border px-4 py-3 flex-1 rounded-xl focus:outline-none transition-shadow"
+            style={inputStyle()}
+            onFocus={focusRing}
+            onBlur={blurRing}
+          />
           <SortByDifficultyButton value={sort} onChange={setSort} />
         </div>
         {session?.user && (session.user as any).role === 'ADMIN' && (
-          <div className="card border p-0 overflow-hidden">
+          <div className="rounded-[var(--radius-lg)] overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
             <button
               onClick={() => setCreating((v) => !v)}
-              className="w-full p-10 text-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition"
+              className="w-full p-10 text-center hover:bg-[var(--paper-2)] transition"
+              style={{ color: 'var(--ink-soft)' }}
             >
               <span className="font-medium">Добавить задачу</span>
             </button>
             {creating && (
-              <form className="grid gap-3 p-4 border-t" onSubmit={onCreate}>
-                <input name="title" placeholder="Заголовок" required className="border px-4 py-3 bg-transparent rounded-xl" />
+              <form className="grid gap-3 p-4" style={{ borderTop: '1px solid var(--line)' }} onSubmit={onCreate}>
+                <input name="title" placeholder="Заголовок" required className="border px-4 py-3 rounded-xl focus:outline-none transition-shadow" style={inputStyle()} onFocus={focusRing} onBlur={blurRing} />
                 <div className="grid grid-cols-2 gap-3">
-                  <input name="topic" placeholder="Тема" required className="border px-4 py-3 bg-transparent rounded-xl" />
+                  <input name="topic" placeholder="Тема" required className="border px-4 py-3 rounded-xl focus:outline-none transition-shadow" style={inputStyle()} onFocus={focusRing} onBlur={blurRing} />
                   <DifficultySelect name="difficulty" value={difficulty || 'EASY'} onChange={(v) => setDifficulty(v)} className="justify-self-end" />
                 </div>
-                <textarea name="content" placeholder="Условие" required className="border px-4 py-3 bg-transparent min-h-[120px] rounded-xl" />
-                <input name="answer" placeholder="Ответ" required className="border px-4 py-3 bg-transparent rounded-xl" />
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                <textarea name="content" placeholder="Условие" required className="border px-4 py-3 min-h-[120px] rounded-xl focus:outline-none transition-shadow" style={inputStyle()} onFocus={focusRing} onBlur={blurRing} />
+                <input name="answer" placeholder="Ответ" required className="border px-4 py-3 rounded-xl focus:outline-none transition-shadow" style={inputStyle()} onFocus={focusRing} onBlur={blurRing} />
+                {error && <p className="text-sm" style={{ color: 'var(--red)' }}>{error}</p>}
                 <div className="flex items-center gap-3">
-                  <button className="py-3 px-5 rounded-xl text-white gradient-accent shadow-soft">Сохранить</button>
+                  <button className="btn-primary py-3 px-5 rounded-xl font-medium">Сохранить</button>
                 </div>
               </form>
             )}
           </div>
         )}
 
-        {/* Кнопка сортировки перенесена в верхний блок справа от поиска */}
-
-        <motion.div className="grid gap-3" initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}>
-          <motion.div variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}>
-            <Link href="/tasks/integral-katex-test" className="block card border p-5 hover:shadow-soft hover:-translate-y-0.5 transition-transform">
+        <motion.div className="grid gap-3" initial="hidden" animate="show" variants={stagger}>
+          <motion.div variants={fadeUp}>
+            <Link
+              href="/tasks/integral-katex-test"
+              className="block rounded-[var(--radius)] p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
+            >
               <div className="flex items-center justify-between gap-4">
-                <div className="font-medium text-lg flex-1">Тест: интеграл (рендер математики)</div>
-                <div className="text-sm text-slate-500 text-right min-w-[180px]">Тест · MATH</div>
+                <div className="font-medium text-lg flex-1" style={{ color: 'var(--ink)' }}>Тест: интеграл (рендер математики)</div>
+                <div className="font-mono text-sm text-right min-w-[180px]" style={{ color: 'var(--ink-soft)' }}>Тест · MATH</div>
               </div>
             </Link>
           </motion.div>
           {!data ? (
-            <div>Загрузка…</div>
+            <div style={{ color: 'var(--ink-soft)' }}>Загрузка…</div>
           ) : data.length === 0 ? (
-            <div className="text-slate-500">Нет задач</div>
+            <EmptyState
+              title="Задач не найдено"
+              text="Попробуйте изменить фильтры или сбросить тему поиска"
+            />
           ) : (
             [...data].sort((a: any, b: any) => {
               if (sort === 'none') return 0;
               const order: Record<string, number> = { EASY: 1, MEDIUM: 2, HARD: 3 };
               return (order[a.difficulty] - order[b.difficulty]) * (sort === 'difficulty-asc' ? 1 : -1);
             }).map((t: any) => (
-              <motion.div key={t.id} variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}>
-                <Link href={{ pathname: `/tasks/${t.id}`, query: { id: t.id } }} className="block card border p-5 hover:shadow-soft hover:-translate-y-0.5 transition-transform">
+              <motion.div key={t.id} variants={fadeUp}>
+                <Link
+                  href={{ pathname: `/tasks/${t.id}`, query: { id: t.id } }}
+                  className="block rounded-[var(--radius)] p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
+                >
                   <div className="flex items-center justify-between gap-4">
-                    <div className="font-medium text-lg flex-1">{t.title}</div>
-                    {t.solved && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md">Решено</span>}
-                    <div className="text-sm text-slate-500 text-right min-w-[180px]">{t.topic} · {t.difficulty}</div>
+                    <div className="font-medium text-lg flex-1" style={{ color: 'var(--ink)' }}>{t.title}</div>
+                    {t.solved && <span className="badge b-easy">Решено</span>}
+                    <span className={`badge ${DIFFICULTY_BADGE[t.difficulty] || ''}`}>{DIFFICULTY_LABEL[t.difficulty] || t.difficulty}</span>
+                    <div className="font-mono text-sm text-right min-w-[120px]" style={{ color: 'var(--ink-soft)' }}>{t.topic}</div>
                   </div>
                 </Link>
               </motion.div>

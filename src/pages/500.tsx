@@ -4,21 +4,22 @@ export default function Custom500() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-6xl font-bold text-red-300 mb-4">500</h1>
-        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Ошибка сервера</h2>
-        <p className="text-gray-600 mb-8">
+        <h1 className="text-6xl font-heading font-bold mb-4" style={{ color: 'var(--status-error)' }}>500</h1>
+        <h2 className="text-2xl font-heading font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Ошибка сервера</h2>
+        <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>
           Произошла внутренняя ошибка сервера. Попробуйте обновить страницу.
         </p>
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+            className="px-6 py-3 text-white gradient-accent btn-aurora rounded-xl transition"
           >
             Обновить страницу
           </button>
           <Link
             href="/"
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            className="px-6 py-3 border rounded-xl hover:bg-white/5 transition"
+            style={{ borderColor: 'var(--border-glass)', color: 'var(--text-secondary)' }}
           >
             На главную
           </Link>

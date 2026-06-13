@@ -11,6 +11,18 @@ import { SourceAttribution } from '@/components/tasks/SourceAttribution';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+const DIFFICULTY_BADGE: Record<string, string> = {
+  EASY: 'b-easy',
+  MEDIUM: 'b-med',
+  HARD: 'b-hard',
+};
+
+const DIFFICULTY_LABEL: Record<string, string> = {
+  EASY: 'Легко',
+  MEDIUM: 'Средне',
+  HARD: 'Сложно',
+};
+
 export default function TaskPage() {
   const { query, push } = useRouter();
   const id = query.id as string | undefined;
@@ -55,24 +67,22 @@ export default function TaskPage() {
     }
   }
 
-  // Показываем загрузку пока данные не загружены
   if (!isClient) {
     return (
       <TaskLayout title="Задача">
         <div className="max-w-2xl mx-auto">
-          <div className="text-center py-8">Загрузка…</div>
+          <div className="text-center py-8" style={{ color: 'var(--ink-soft)' }}>Загрузка…</div>
         </div>
       </TaskLayout>
     );
   }
 
-  // Показываем ошибку если задача не найдена
   if (taskError) {
     return (
       <TaskLayout title="Ошибка">
         <div className="max-w-2xl mx-auto">
           <div className="text-center py-8">
-            <h1 className="text-2xl font-semibold mb-4">Задача не найдена</h1>
+            <h1 className="font-display text-2xl font-bold mb-4" style={{ color: 'var(--ink)' }}>Задача не найдена</h1>
             <BackLink href="/tasks">Вернуться к списку задач</BackLink>
           </div>
         </div>
@@ -84,18 +94,20 @@ export default function TaskPage() {
     <TaskLayout title={task ? task.title : 'Задача'}>
       <div className="max-w-2xl mx-auto">
         {!task ? (
-          <div className="text-center py-8">Загрузка…</div>
+          <div className="text-center py-8" style={{ color: 'var(--ink-soft)' }}>Загрузка…</div>
         ) : (
           <div className="space-y-6">
             <div className="space-y-3">
               <BackLink href="/tasks">Назад</BackLink>
-              <div className="text-sm text-slate-500">{task.topic} · {task.difficulty}</div>
-              <h1 className="text-2xl font-semibold">{task.title}</h1>
+              <span className={`badge ${DIFFICULTY_BADGE[task.difficulty] || ''}`}>{DIFFICULTY_LABEL[task.difficulty] || task.difficulty}</span>
+              <div className="font-mono text-sm" style={{ color: 'var(--ink-soft)' }}>{task.topic}</div>
+              <h1 className="font-display text-2xl md:text-3xl font-bold" style={{ color: 'var(--ink)' }}>{task.title}</h1>
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsStatementCollapsed(v => !v)}
-                  className="text-sm text-blue-600 hover:underline underline-offset-4"
+                  className="text-sm hover:underline underline-offset-4"
+                  style={{ color: 'var(--red)' }}
                   aria-expanded={!isStatementCollapsed}
                 >
                   {isStatementCollapsed ? 'Развернуть условие' : 'Свернуть условие'}
@@ -106,9 +118,10 @@ export default function TaskPage() {
                   `transition-all duration-300 ${
                     isStatementCollapsed
                       ? 'max-h-0 p-0 border-transparent overflow-hidden'
-                      : 'max-h-[42vh] overflow-auto rounded-[26px] border border-neutral-200/60 p-4 md:p-5 bg-white'
+                      : 'max-h-[42vh] overflow-auto rounded-[var(--radius-lg)] p-4 md:p-5'
                   }`
                 }
+                style={!isStatementCollapsed ? { backgroundColor: 'var(--surface)', border: '1px solid var(--line)' } : undefined}
               >
                 {!isStatementCollapsed && (
                   <>
@@ -125,7 +138,7 @@ export default function TaskPage() {
               </div>
             </div>
 
-            <div className="bg-white border rounded-xl shadow p-6">
+            <div className="rounded-[var(--radius)] p-6" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
               <AnswerPanel
                 value={answer}
                 onChange={setAnswer}
@@ -134,9 +147,9 @@ export default function TaskPage() {
                 statement={task.content}
                 placeholder="Ваш ответ"
               />
-              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+              {error && <p className="text-sm mt-2" style={{ color: 'var(--red)' }}>{error}</p>}
               {result && (
-                <p className={result.isCorrect ? 'text-green-600 mt-2' : 'text-red-600 mt-2'}>
+                <p className="mt-2" style={{ color: result.isCorrect ? 'var(--green-deep)' : 'var(--red)' }}>
                   {result.isCorrect ? 'Верно! Задача зачтена.' : 'Неверно. Попробуйте ещё раз.'}
                 </p>
               )}
