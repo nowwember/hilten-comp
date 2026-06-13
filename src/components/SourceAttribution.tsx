@@ -18,19 +18,19 @@ export function SourceAttribution({ url, id, accessedAt }: SourceAttributionProp
   const dateStr = formatDate(accessedAt)
 
   return (
-    <div className="mt-6 rounded-2xl border border-neutral-200/60 bg-neutral-50 px-3 py-2 text-[13px] text-slate-600">
+    <div className="mt-6 rounded-2xl px-3 py-2 text-[13px]" style={{ border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1">
           <span>Источник:</span>
           <span className="font-medium">ФИПИ</span>
           <span>·</span>
-          <a href={url} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+          <a href={url} target="_blank" rel="noopener" className="hover:underline" style={{ color: 'var(--accent-from)' }}>
             Оригинал
           </a>
-          {id && <span className="text-slate-500">(ID: {id})</span>}
+          {id && <span style={{ color: 'var(--text-muted)' }}>(ID: {id})</span>}
         </div>
         {dateStr && (
-          <div className="shrink-0 text-[12px] text-slate-400">доступ: {dateStr}</div>
+          <div className="shrink-0 text-[12px]" style={{ color: 'var(--text-muted)' }}>доступ: {dateStr}</div>
         )}
       </div>
     </div>
@@ -38,5 +38,3 @@ export function SourceAttribution({ url, id, accessedAt }: SourceAttributionProp
 }
 
 export default SourceAttribution
-
-

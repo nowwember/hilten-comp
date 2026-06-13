@@ -7,15 +7,52 @@ import { ClockIcon, AcademicCapIcon, ChartBarIcon, MinusIcon, PlusIcon } from '@
 import { getCurrentMonth, DEFAULT_DURATION_MINUTES } from '@/lib/exams/variants';
 import { generateRandomVariantBySeed } from '@/lib/exams/variants';
 
+const DIFFICULTY_BADGE: Record<string, string> = {
+  easy: 'b-easy',
+  medium: 'b-med',
+  hard: 'b-hard',
+};
+
+const DIFFICULTY_LABEL: Record<string, string> = {
+  easy: 'Легко',
+  medium: 'Средне',
+  hard: 'Сложно',
+};
+
+/* Маленький math-акцент в углу карточки */
+function CornerAccent({ variant }: { variant: 'parabola' | 'triangle' | 'circle' }) {
+  if (variant === 'parabola') {
+    return (
+      <svg className="absolute -right-2 -top-2 opacity-15" width="44" height="32" viewBox="0 0 44 32" fill="none">
+        <path d="M2 28 Q22 -4 42 28" stroke="var(--red)" strokeWidth="2.5" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (variant === 'triangle') {
+    return (
+      <svg className="absolute -right-1 -top-1 opacity-15" width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <polygon points="6,30 30,30 6,6" stroke="var(--amber-deep)" strokeWidth="2" fill="none" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="absolute -right-2 -top-2 opacity-15" width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="14" stroke="var(--green-deep)" strokeWidth="2" fill="none" />
+    </svg>
+  );
+}
+
+const ACCENTS: Array<'parabola' | 'triangle' | 'circle'> = ['parabola', 'triangle', 'circle'];
+
 export default function ExamLanding() {
   const router = useRouter();
   const { exam, mode } = router.query;
-  
+
   const [currentMode, setCurrentMode] = useState<EgeMode>('base');
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const MAX_TASKS_PER_TYPE = 5;
-  
+
   const [showRandomPreview, setShowRandomPreview] = useState(false);
   const [randomSeed, setRandomSeed] = useState<string | null>(null);
   const [randomVariant, setRandomVariant] = useState<any>(null);
@@ -33,58 +70,44 @@ export default function ExamLanding() {
     }
     setIsLoading(false);
   }, [exam, mode]);
-  
+
   // Показываем загрузку пока router.query не готов
   if (isLoading || !router.isReady) {
     return (
       <>
         <div className="p-6">
-          <div className="text-center text-slate-500">Загрузка...</div>
+          <div className="text-center" style={{ color: 'var(--ink-soft)' }}>Загрузка...</div>
         </div>
       </>
     );
   }
-  
+
   if (!exam || typeof exam !== 'string') {
-    console.log('Exam validation failed:', { exam, type: typeof exam });
     return (
       <>
         <div className="p-6">
-          <div className="text-center text-slate-500">Экзамен не найден</div>
+          <div className="text-center" style={{ color: 'var(--ink-soft)' }}>Экзамен не найден</div>
         </div>
       </>
     );
   }
 
-  console.log('Getting exam config for:', { exam, currentMode });
   const examConfig = getExam(exam as ExamId, exam === 'ege' ? currentMode : undefined);
-  
+
   if (!examConfig) {
-    console.log('Exam config not found for:', { exam, currentMode });
     return (
       <>
         <div className="p-6">
-          <div className="text-center text-slate-500">Экзамен не найден</div>
+          <div className="text-center" style={{ color: 'var(--ink-soft)' }}>Экзамен не найден</div>
         </div>
       </>
     );
   }
-
-  console.log('Exam config loaded:', examConfig.name);
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}ч ${mins}мин`;
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'hard': return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
-      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-900/20 dark:text-slate-400';
-    }
   };
 
   const getTaskCountKey = (taskNumber: number) => {
@@ -97,10 +120,10 @@ export default function ExamLanding() {
   const handleTaskCountChange = (taskNumber: number, increment: boolean) => {
     const key = getTaskCountKey(taskNumber);
     const currentCount = taskCounts[key] || 0;
-    const newCount = increment 
+    const newCount = increment
       ? Math.min(currentCount + 1, MAX_TASKS_PER_TYPE)
       : Math.max(currentCount - 1, 0);
-    
+
     setTaskCounts(prev => ({
       ...prev,
       [key]: newCount
@@ -120,22 +143,21 @@ export default function ExamLanding() {
     const selectedTasks = Object.entries(taskCounts)
       .filter(([key, count]) => {
         const [examKey, modeKey] = key.split(':');
-        return count > 0 && examKey === exam && 
+        return count > 0 && examKey === exam &&
                (exam === 'oge' ? modeKey === 'default' : modeKey === currentMode);
       })
       .map(([key, count]) => {
         const taskNumber = parseInt(key.split(':')[2]);
         return { taskNumber, count };
       });
-    
+
     const result = {
       exam: exam as ExamId,
       mode: exam === 'ege' ? currentMode : undefined,
       picks: selectedTasks
     };
-    
-    console.log('Выбранные задания:', result);
-    console.log('Общее количество заданий:', selectedTasks.reduce((sum, task) => sum + task.count, 0));
+
+    return result;
   };
 
   const handleShowRandom = () => {
@@ -154,49 +176,115 @@ export default function ExamLanding() {
 
   const { part1, part2 } = groupTasksByPart(examConfig.tasks);
 
+  const renderTaskGrid = (tasks: typeof part1) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {tasks.map((task, index) => (
+        <motion.div
+          key={task.number}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 + index * 0.02 }}
+          className="h-full"
+        >
+          <div
+            className="group relative rounded-[var(--radius)] overflow-hidden transition-all h-full flex flex-col hover:-translate-y-0.5 hover:shadow-lg"
+            style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
+          >
+            <CornerAccent variant={ACCENTS[index % ACCENTS.length]} />
+            {/* Карточка задания */}
+            <Link
+              href={`/exams/${exam}/tasks/${task.number}${exam === 'ege' ? `?mode=${currentMode}` : ''}`}
+              className="p-4 flex-1 flex flex-col relative z-10"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="font-mono text-lg font-bold" style={{ color: 'var(--ink)' }}>
+                  №{task.number}
+                </div>
+                <span className={`badge ${DIFFICULTY_BADGE[task.difficulty] || ''}`}>
+                  {DIFFICULTY_LABEL[task.difficulty] || task.difficulty}
+                </span>
+              </div>
+              <h3 className="font-medium text-sm mb-1 line-clamp-2 flex-1 min-h-[2.5rem]" style={{ color: 'var(--ink)' }}>{task.title}</h3>
+              <p className="text-xs line-clamp-2 mb-3" style={{ color: 'var(--ink-soft)' }}>
+                {task.description}
+              </p>
+              <div className="flex items-center justify-between font-mono text-xs mt-auto" style={{ color: 'var(--ink-soft)' }}>
+                <span>{task.estimatedTime} мин</span>
+                <span>{task.topics.length} тем</span>
+              </div>
+            </Link>
+
+            {/* Счетчик задач */}
+            <div className="flex items-center justify-between px-3 py-2 relative z-10" style={{ background: 'var(--paper-2)', borderTop: '1px solid var(--line)' }}>
+              <button
+                onClick={() => handleTaskCountChange(task.number, false)}
+                disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === 0}
+                className="w-6 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border hover:border-[var(--red)]"
+                style={{ borderColor: 'var(--line-2)', background: 'var(--surface)' }}
+              >
+                <MinusIcon className="h-3 w-3" />
+              </button>
+              <span className="font-mono text-sm font-medium" style={{ color: 'var(--ink)' }}>
+                {taskCounts[getTaskCountKey(task.number)] || 0}
+              </span>
+              <button
+                onClick={() => handleTaskCountChange(task.number, true)}
+                disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === MAX_TASKS_PER_TYPE}
+                className="w-6 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border hover:border-[var(--red)]"
+                style={{ borderColor: 'var(--line-2)', background: 'var(--surface)' }}
+              >
+                <PlusIcon className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+
   return (
     <>
       <div className="p-6 space-y-8">
         {/* Заголовок экзамена */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center space-y-4"
         >
-          <h1 className="text-4xl font-bold">
-            <span className="text-red-500">{examConfig.name}</span>
-            <span className="text-amber-400"> Математика</span>
+          <h1 className="font-display text-4xl md:text-5xl font-extrabold">
+            <span style={{ color: 'var(--red)' }}>{examConfig.name}</span>
+            <span style={{ color: 'var(--amber-deep)' }}> Математика</span>
           </h1>
-          <p className="text-xl text-slate-600 dark:text-slate-300">{examConfig.fullName}</p>
-          <p className="text-slate-500 max-w-2xl mx-auto">{examConfig.description}</p>
+          <p className="text-xl" style={{ color: 'var(--ink-soft)' }}>{examConfig.fullName}</p>
+          <p className="max-w-2xl mx-auto" style={{ color: 'var(--ink-soft)' }}>{examConfig.description}</p>
         </motion.div>
 
         {/* Переключатель режима для ЕГЭ */}
         {exam === 'ege' && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
             className="flex justify-center"
           >
-            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+            <div className="flex rounded-xl p-1" style={{ background: 'var(--paper-2)' }}>
               <button
                 onClick={() => handleModeChange('base')}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                  currentMode === 'base'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
+                className="px-6 py-3 rounded-lg font-medium transition-colors"
+                style={currentMode === 'base'
+                  ? { background: 'var(--surface)', color: 'var(--ink)', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+                  : { color: 'var(--ink-soft)' }
+                }
               >
                 Базовая
               </button>
               <button
                 onClick={() => handleModeChange('profile')}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                  currentMode === 'profile'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
+                className="px-6 py-3 rounded-lg font-medium transition-colors"
+                style={currentMode === 'profile'
+                  ? { background: 'var(--surface)', color: 'var(--ink)', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+                  : { color: 'var(--ink-soft)' }
+                }
               >
                 Профильная
               </button>
@@ -205,26 +293,32 @@ export default function ExamLanding() {
         )}
 
         {/* Статистика экзамена */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto"
         >
-          <div className="card border p-6 text-center">
-            <ClockIcon className="h-8 w-8 mx-auto mb-2 text-slate-500" />
-            <div className="text-2xl font-bold">{formatDuration(examConfig.duration)}</div>
-            <div className="text-sm text-slate-500">Время на экзамен</div>
+          <div className="rounded-[var(--radius)] p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'var(--paper-2)', color: 'var(--red)' }}>
+              <ClockIcon className="h-5 w-5" />
+            </div>
+            <div className="font-mono text-2xl font-bold" style={{ color: 'var(--ink)' }}>{formatDuration(examConfig.duration)}</div>
+            <div className="text-sm mt-1" style={{ color: 'var(--ink-soft)' }}>Время на экзамен</div>
           </div>
-          <div className="card border p-6 text-center">
-            <AcademicCapIcon className="h-8 w-8 mx-auto mb-2 text-slate-500" />
-            <div className="text-2xl font-bold">{examConfig.tasks.length}</div>
-            <div className="text-sm text-slate-500">Количество задач</div>
+          <div className="rounded-[var(--radius)] p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'var(--paper-2)', color: 'var(--red)' }}>
+              <AcademicCapIcon className="h-5 w-5" />
+            </div>
+            <div className="font-mono text-2xl font-bold" style={{ color: 'var(--ink)' }}>{examConfig.tasks.length}</div>
+            <div className="text-sm mt-1" style={{ color: 'var(--ink-soft)' }}>Количество задач</div>
           </div>
-          <div className="card border p-6 text-center">
-            <ChartBarIcon className="h-8 w-8 mx-auto mb-2 text-slate-500" />
-            <div className="text-2xl font-bold">{examConfig.maxScore}</div>
-            <div className="text-sm text-slate-500">Максимальный балл</div>
+          <div className="rounded-[var(--radius)] p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'var(--paper-2)', color: 'var(--red)' }}>
+              <ChartBarIcon className="h-5 w-5" />
+            </div>
+            <div className="font-mono text-2xl font-bold" style={{ color: 'var(--ink)' }}>{examConfig.maxScore}</div>
+            <div className="text-sm mt-1" style={{ color: 'var(--ink-soft)' }}>Максимальный балл</div>
           </div>
         </motion.div>
 
@@ -232,20 +326,20 @@ export default function ExamLanding() {
         <div className="w-full flex flex-col sm:flex-row gap-3 mb-8">
           <button
             onClick={handleShowRandom}
-            className="flex-1 rounded-xl border border-red-500 text-red-500 px-6 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+            className="btn-ghost flex-1 rounded-xl px-6 py-3 transition-colors font-medium hover:bg-[var(--paper-2)]"
             type="button"
           >
             Случайный вариант
           </button>
           <Link
             href={{ pathname: `/exams/${exam}/variants`, query: { month, ...(exam === 'ege' ? { mode: currentMode } : {}) } }}
-            className="flex-1 rounded-xl bg-red-500 text-white px-6 py-3 hover:bg-red-600 transition-colors font-medium text-center"
+            className="btn-primary flex-1 rounded-xl px-6 py-3 transition-transform hover:scale-[1.02] font-medium text-center"
           >
             Варианты
           </Link>
           <button
             onClick={handleCreateVariant}
-            className="flex-1 rounded-xl border border-red-500 text-red-500 px-6 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+            className="btn-ghost flex-1 rounded-xl px-6 py-3 transition-colors font-medium hover:bg-[var(--paper-2)]"
             type="button"
           >
             Составить вариант
@@ -254,21 +348,21 @@ export default function ExamLanding() {
 
         {/* Превью случайного варианта */}
         {showRandomPreview && randomVariant && (
-          <div className="relative w-full max-w-xl mx-auto mb-8 border rounded-2xl bg-white dark:bg-slate-900/80 shadow-lg p-6 z-20">
-            <div className="font-bold text-lg mb-2">Случайный вариант — {exam === 'oge' ? 'ОГЭ' : exam === 'ege' && currentMode === 'profile' ? 'ЕГЭ профильная' : 'ЕГЭ базовая'}</div>
-            <div className="mb-2 text-slate-600 dark:text-slate-300 text-sm">Месяц: <b>{month}</b></div>
-            <div className="mb-2 text-slate-600 dark:text-slate-300 text-sm">Время: <b>{exam === 'oge' ? DEFAULT_DURATION_MINUTES.oge : currentMode === 'profile' ? DEFAULT_DURATION_MINUTES.ege_profile : DEFAULT_DURATION_MINUTES.ege_base} мин</b></div>
-            <div className="mb-4 text-slate-600 dark:text-slate-300 text-sm">Полный комплект заданий</div>
+          <div className="relative w-full max-w-xl mx-auto mb-8 rounded-[var(--radius-lg)] p-6 z-20" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}>
+            <div className="font-display font-bold text-lg mb-2" style={{ color: 'var(--ink)' }}>Случайный вариант — {exam === 'oge' ? 'ОГЭ' : exam === 'ege' && currentMode === 'profile' ? 'ЕГЭ профильная' : 'ЕГЭ базовая'}</div>
+            <div className="mb-2 text-sm" style={{ color: 'var(--ink-soft)' }}>Месяц: <b>{month}</b></div>
+            <div className="mb-2 text-sm" style={{ color: 'var(--ink-soft)' }}>Время: <b>{exam === 'oge' ? DEFAULT_DURATION_MINUTES.oge : currentMode === 'profile' ? DEFAULT_DURATION_MINUTES.ege_profile : DEFAULT_DURATION_MINUTES.ege_base} мин</b></div>
+            <div className="mb-4 text-sm" style={{ color: 'var(--ink-soft)' }}>Полный комплект заданий</div>
             <div className="flex gap-3">
               <button
                 onClick={handleStartRandom}
-                className="flex-1 rounded-xl bg-red-500 text-white px-6 py-3 hover:bg-red-600 transition-colors font-medium"
+                className="btn-primary flex-1 rounded-xl px-6 py-3 transition-transform hover:scale-[1.02] font-medium"
               >
                 Начать
               </button>
               <button
                 onClick={() => setShowRandomPreview(false)}
-                className="flex-1 rounded-xl border border-red-500 text-red-500 px-6 py-3 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium"
+                className="btn-ghost flex-1 rounded-xl px-6 py-3 transition-colors font-medium hover:bg-[var(--paper-2)]"
               >
                 Отмена
               </button>
@@ -277,7 +371,7 @@ export default function ExamLanding() {
         )}
 
         {/* Сетка задач */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -285,129 +379,15 @@ export default function ExamLanding() {
         >
           {/* Часть 1 */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold mt-6 mb-2">Часть 1</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {part1.map((task, index) => (
-                <motion.div
-                  key={task.number}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.02 }}
-                  className="h-full"
-                >
-                  <div className="group rounded-2xl border shadow-sm hover:shadow-md overflow-hidden transition-shadow h-full flex flex-col">
-                    {/* Карточка задания */}
-                    <Link 
-                      href={`/exams/${exam}/tasks/${task.number}${exam === 'ege' ? `?mode=${currentMode}` : ''}`}
-                      className="p-4 flex-1 flex flex-col"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="text-lg font-bold text-slate-700 dark:text-slate-300">
-                          №{task.number}
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
-                          {task.difficulty === 'easy' ? 'Легко' : 
-                           task.difficulty === 'medium' ? 'Средне' : 'Сложно'}
-                        </span>
-                      </div>
-                      <h3 className="font-medium text-sm mb-1 line-clamp-2 flex-1 min-h-[2.5rem]">{task.title}</h3>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
-                        {task.description}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-slate-500 mt-auto">
-                        <span>{task.estimatedTime} мин</span>
-                        <span>{task.topics.length} тем</span>
-                      </div>
-                    </Link>
-                    
-                    {/* Счетчик задач */}
-                    <div className="flex items-center justify-between bg-white/50 dark:bg-slate-900/50 border-t px-3 py-2">
-                      <button
-                        onClick={() => handleTaskCountChange(task.number, false)}
-                        disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === 0}
-                        className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                      >
-                        <MinusIcon className="h-3 w-3" />
-                      </button>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {taskCounts[getTaskCountKey(task.number)] || 0}
-                      </span>
-                      <button
-                        onClick={() => handleTaskCountChange(task.number, true)}
-                        disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === MAX_TASKS_PER_TYPE}
-                        className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                      >
-                        <PlusIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            <h2 className="font-display text-lg font-bold mt-6 mb-2" style={{ color: 'var(--ink)' }}>Часть 1</h2>
+            {renderTaskGrid(part1)}
           </div>
 
           {/* Часть 2 (если есть) */}
           {part2.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold mt-6 mb-2">Часть 2</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {part2.map((task, index) => (
-                  <motion.div
-                    key={task.number}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + index * 0.02 }}
-                    className="h-full"
-                  >
-                    <div className="group rounded-2xl border shadow-sm hover:shadow-md overflow-hidden transition-shadow h-full flex flex-col">
-                      {/* Карточка задания */}
-                      <Link 
-                        href={`/exams/${exam}/tasks/${task.number}${exam === 'ege' ? `?mode=${currentMode}` : ''}`}
-                        className="p-4 flex-1 flex flex-col"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="text-lg font-bold text-slate-700 dark:text-slate-300">
-                            №{task.number}
-                          </div>
-                          <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
-                            {task.difficulty === 'easy' ? 'Легко' : 
-                             task.difficulty === 'medium' ? 'Средне' : 'Сложно'}
-                          </span>
-                        </div>
-                        <h3 className="font-medium text-sm mb-1 line-clamp-2 flex-1 min-h-[2.5rem]">{task.title}</h3>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
-                          {task.description}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-slate-500 mt-auto">
-                          <span>{task.estimatedTime} мин</span>
-                          <span>{task.topics.length} тем</span>
-                        </div>
-                      </Link>
-                      
-                      {/* Счетчик задач */}
-                      <div className="flex items-center justify-between bg-white/50 dark:bg-slate-900/50 border-t px-3 py-2">
-                        <button
-                          onClick={() => handleTaskCountChange(task.number, false)}
-                          disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === 0}
-                          className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                        >
-                          <MinusIcon className="h-3 w-3" />
-                        </button>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {taskCounts[getTaskCountKey(task.number)] || 0}
-                        </span>
-                        <button
-                          onClick={() => handleTaskCountChange(task.number, true)}
-                          disabled={(taskCounts[getTaskCountKey(task.number)] || 0) === MAX_TASKS_PER_TYPE}
-                          className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                        >
-                          <PlusIcon className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              <h2 className="font-display text-lg font-bold mt-6 mb-2" style={{ color: 'var(--ink)' }}>Часть 2</h2>
+              {renderTaskGrid(part2)}
             </div>
           )}
         </motion.div>
