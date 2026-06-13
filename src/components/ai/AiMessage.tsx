@@ -16,8 +16,13 @@ export default function AiMessage({ role, markdown, children }: {
         className={`max-w-[92%] md:max-w-[70%] rounded-2xl px-4 py-3 ${
           isUser
             ? 'bg-gradient-to-r from-blue-500 to-violet-600 text-white'
-            : 'bg-white border border-neutral-200/60 shadow-sm'
+            : ''
         }`}
+        style={!isUser ? {
+          backgroundColor: 'var(--bg-elevated)',
+          border: '1px solid var(--border-subtle)',
+          color: 'var(--text-primary)'
+        } : undefined}
       >
         {markdown ? (
           <div className="text-sm ai-message-prose">

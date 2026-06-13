@@ -14,8 +14,6 @@ type PageProps = {
 }
 
 function minimalSanitizeHtml(html: string): string {
-  // Минимальная очистка: вырезаем теги <script> и on* атрибуты
-  // Не добавляем зависимостей
   let safe = html.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
   safe = safe.replace(/ on[a-z]+="[^"]*"/gi, '')
   safe = safe.replace(/ on[a-z]+='[^']*'/gi, '')
@@ -32,7 +30,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     return { notFound: true }
   }
 
-  // slug здесь для маршрута, задача ищется по ключам
   const task = await loadOne('ege', 'basic', taskNo, subtopic)
   return { props: { taskNo, subtopic, task: task || null } }
 }
@@ -40,19 +37,19 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 export default function EgeBasicTaskCardPage({ taskNo, subtopic, task }: PageProps) {
   const readableTitle = EGE_BASIC_MAP[taskNo]?.title || `Задание ${taskNo}`
   return (
-    <TaskLayout title={task ? `${readableTitle}` : `ЕГЭ · Базовая · ${readableTitle}`}> 
+    <TaskLayout title={task ? `${readableTitle}` : `ЕГЭ · Базовая · ${readableTitle}`}>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="space-y-2">
           <BackLink href={`/exam/ege/basic/${taskNo}`}>Назад</BackLink>
-          <h1 className="text-2xl font-semibold">ЕГЭ · Базовая · {readableTitle}</h1>
-          <p className="text-slate-500">Подтема: {subtopic}</p>
+          <h1 className="text-2xl font-heading font-semibold">ЕГЭ · Базовая · {readableTitle}</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>Подтема: {subtopic}</p>
         </div>
 
         {!task ? (
-          <div className="border rounded-xl p-6 text-slate-500">Задача не найдена для этой подтемы.</div>
+          <div className="card-surface rounded-xl p-6" style={{ color: 'var(--text-muted)' }}>Задача не найдена для этой подтемы.</div>
         ) : (
           <div className="space-y-4">
-            <div className="transition-all rounded-[26px] border border-neutral-200/60 p-4 md:p-5 bg-white">
+            <div className="transition-all rounded-[26px] p-4 md:p-5" style={{ border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface)' }}>
               {task.statement_md ? (
                 <MathRenderer markdown={task.statement_md} />
               ) : task.statement_html ? (
@@ -61,7 +58,7 @@ export default function EgeBasicTaskCardPage({ taskNo, subtopic, task }: PagePro
                   dangerouslySetInnerHTML={{ __html: minimalSanitizeHtml(task.statement_html) }}
                 />
               ) : (
-                <div className="text-slate-500">Текст условия отсутствует.</div>
+                <div style={{ color: 'var(--text-muted)' }}>Текст условия отсутствует.</div>
               )}
               {task.source_url && (
                 <SourceAttribution url={task.source_url} accessedAt={task.accessed_at} id={task.source_id} />
@@ -73,5 +70,3 @@ export default function EgeBasicTaskCardPage({ taskNo, subtopic, task }: PagePro
     </TaskLayout>
   )
 }
-
-
