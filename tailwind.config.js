@@ -5,29 +5,29 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'Apple Color Emoji', 'Segoe UI Emoji']
+        display: ['var(--font-display)'],
+        body: ['var(--font-body)'],
+        mono: ['var(--font-mono)']
       },
       colors: {
-        brand: {
-          50: '#eef9ff',
-          100: '#d9f1ff',
-          200: '#bce7ff',
-          300: '#8fd7ff',
-          400: '#5cc2ff',
-          500: '#2aa9ff',
-          600: '#1787db',
-          700: '#136cb0',
-          800: '#135a8f',
-          900: '#134d78'
-        },
-        accent: {
-          500: '#7c5cff',
-          600: '#6b46ff',
-          700: '#5b38e6'
-        }
+        paper: 'var(--paper)',
+        'paper-2': 'var(--paper-2)',
+        surface: 'var(--surface)',
+        ink: 'var(--ink)',
+        'ink-soft': 'var(--ink-soft)',
+        red: 'var(--red)',
+        'red-deep': 'var(--red-deep)',
+        amber: 'var(--amber)',
+        'amber-deep': 'var(--amber-deep)',
+        green: 'var(--green)',
+        'green-deep': 'var(--green-deep)'
       },
       boxShadow: {
-        soft: '0 10px 30px -12px rgba(0,0,0,0.12)'
+        soft: '0 8px 32px rgba(0, 0, 0, 0.30)',
+        glow: '0 0 20px rgba(129, 140, 248, 0.15), 0 8px 32px rgba(0, 0, 0, 0.25)'
+      },
+      backdropBlur: {
+        glass: '16px'
       },
       keyframes: {
         fadeInUp: {

@@ -48,38 +48,39 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 export default function EgeBasicTaskListPage({ taskNo, groups }: PageProps) {
   const readableTitle = EGE_BASIC_MAP[taskNo]?.title || `Задание ${taskNo}`
   return (
-    <TaskLayout title={`ЕГЭ · Базовая · ${readableTitle}`}> 
+    <TaskLayout title={`ЕГЭ · Базовая · ${readableTitle}`}>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold">ЕГЭ · Базовая · {readableTitle}</h1>
-          <p className="text-slate-500 mt-1">Подтемы и количество импортированных задач</p>
+          <h1 className="text-2xl font-heading font-semibold">ЕГЭ · Базовая · {readableTitle}</h1>
+          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>Подтемы и количество импортированных задач</p>
         </div>
 
         {groups.length === 0 ? (
-          <div className="border rounded-xl p-6 text-slate-500">Пока нет импортированных задач для этого номера.</div>
+          <div className="card-surface rounded-xl p-6" style={{ color: 'var(--text-muted)' }}>Пока нет импортированных задач для этого номера.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
             {groups.map((g) => (
               <div
                 key={g.subtopic}
-                className="h-full border rounded-xl p-4 bg-white transition hover:shadow-sm hover:border-neutral-300"
+                className="h-full card-surface card-glow rounded-xl p-4 transition"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="text-base font-medium leading-snug">{g.subtopic}</div>
-                  <div className="text-sm text-slate-500 whitespace-nowrap">{g.count} шт.</div>
+                  <div className="text-sm whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{g.count} шт.</div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-3">
                   {g.examples.map((ex, idx) => (
                     <Link
                       key={idx}
                       href={`/exam/ege/basic/${taskNo}/${encodeURIComponent(g.subtopic)}/${encodeURIComponent(ex.slug)}`}
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm hover:underline"
+                      style={{ color: 'var(--accent-from)' }}
                     >
                       Открыть пример {idx + 1}
                     </Link>
                   ))}
                   {g.examples.length === 0 && (
-                    <span className="text-sm text-slate-400">Нет примеров</span>
+                    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Нет примеров</span>
                   )}
                 </div>
               </div>
@@ -90,5 +91,3 @@ export default function EgeBasicTaskListPage({ taskNo, groups }: PageProps) {
     </TaskLayout>
   )
 }
-
-

@@ -11,14 +11,14 @@ interface AnswerPanelProps {
   disabled?: boolean;
 }
 
-export function AnswerPanel({ 
-  value, 
-  onChange, 
-  onCheck, 
-  taskId, 
-  statement, 
-  placeholder = "Ваш ответ", 
-  disabled = false 
+export function AnswerPanel({
+  value,
+  onChange,
+  onCheck,
+  taskId,
+  statement,
+  placeholder = "Ваш ответ",
+  disabled = false
 }: AnswerPanelProps) {
   const { open } = useTaskAiChat();
 
@@ -44,7 +44,14 @@ export function AnswerPanel({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border rounded-xl bg-transparent placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="w-full px-4 py-3 border rounded-xl focus:outline-none transition-shadow"
+          style={{
+            backgroundColor: 'var(--surface)',
+            borderColor: 'var(--line-2)',
+            color: 'var(--ink)',
+          }}
+          onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 3px rgba(230,62,43,.14)')}
+          onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')}
           aria-label="Ваш ответ"
           disabled={disabled}
         />
@@ -53,14 +60,14 @@ export function AnswerPanel({
         <button
           type="submit"
           disabled={disabled}
-          className="px-4 py-3 rounded-xl text-white gradient-accent shadow-soft text-sm font-medium hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-primary px-4 py-3 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Проверить
         </button>
         <button
           type="button"
           onClick={handleExplain}
-          className="px-4 py-3 rounded-xl border text-blue-700 bg-white hover:bg-blue-50 transition disabled:opacity-50"
+          className="btn-ghost px-4 py-3 rounded-xl transition disabled:opacity-50 hover:bg-[var(--paper-2)]"
           disabled={disabled}
         >
           Объяснение от ИИ

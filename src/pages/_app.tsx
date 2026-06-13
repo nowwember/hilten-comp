@@ -4,8 +4,30 @@ import { AiExplainProvider } from '@/components/ai/AiExplainProvider';
 import Layout from '@/components/Layout';
 import dynamic from 'next/dynamic';
 import Script from 'next/script';
+import { Unbounded, Onest, JetBrains_Mono } from 'next/font/google';
 import '@/styles/globals.css';
 import '@/styles/ai-panel.css';
+
+const unbounded = Unbounded({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '600', '800'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const onest = Onest({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-body',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '700'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 const AiExplainPanel = dynamic(() => import('@/components/ai/AiExplainPanel'), {
   ssr: false,
@@ -15,10 +37,6 @@ const AiExplainPanel = dynamic(() => import('@/components/ai/AiExplainPanel'), {
 export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <SessionProvider session={session}>
-      <Script
-        src="https://polyfill.io/v3/polyfill.min.js?features=es6"
-        strategy="beforeInteractive"
-      />
       <Script
         id="MathJax-config"
         strategy="beforeInteractive"
@@ -49,14 +67,14 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
           }
         }}
       />
-      <AiExplainProvider>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-        <AiExplainPanel />
-      </AiExplainProvider>
+      <div className={`${unbounded.variable} ${onest.variable} ${jetbrainsMono.variable} font-body`}>
+        <AiExplainProvider>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+          <AiExplainPanel />
+        </AiExplainProvider>
+      </div>
     </SessionProvider>
   );
 }
-
-

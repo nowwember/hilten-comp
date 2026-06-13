@@ -19,7 +19,7 @@ export function SourceAttribution({ url, accessedAt, id }: SourceAttributionProp
   }
 
   return (
-    <div className="border-t border-neutral-200/60 mt-6 pt-3 text-[13px] text-slate-500">
+    <div className="mt-6 pt-3 text-[13px]" style={{ borderTop: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
       <div className="flex flex-wrap items-center gap-1">
         <span>Источник:</span>
         <a
@@ -27,6 +27,7 @@ export function SourceAttribution({ url, accessedAt, id }: SourceAttributionProp
           target="_blank"
           rel="nofollow noopener"
           className="hover:underline"
+          style={{ color: 'var(--accent-from)' }}
         >
           Открытый банк заданий ФИПИ
         </a>
@@ -36,6 +37,7 @@ export function SourceAttribution({ url, accessedAt, id }: SourceAttributionProp
           target="_blank"
           rel="nofollow noopener"
           className="hover:underline"
+          style={{ color: 'var(--accent-from)' }}
         >
           Оригинал
         </a>

@@ -20,7 +20,7 @@ export default function DifficultySelect({
   name?: string;
 }) {
   return (
-    <div className={cn('inline-flex rounded-xl border overflow-hidden', className)} role="group" aria-label="Выбор сложности">
+    <div className={cn('inline-flex rounded-xl border overflow-hidden', className)} style={{ borderColor: 'var(--line-2)' }} role="group" aria-label="Выбор сложности">
       {OPTIONS.map((opt, idx) => {
         const active = value === opt.value;
         return (
@@ -30,19 +30,20 @@ export default function DifficultySelect({
             onClick={() => onChange(opt.value)}
             className={cn(
               'px-4 py-2 text-sm transition',
-              idx > 0 && 'border-l',
-              active ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'hover:bg-slate-900/5 dark:hover:bg-white/5'
+              idx > 0 && 'border-l'
             )}
+            style={{
+              borderColor: idx > 0 ? 'var(--line-2)' : undefined,
+              background: active ? 'var(--brand)' : 'transparent',
+              color: active ? '#fff' : 'var(--ink-soft)'
+            }}
             aria-pressed={active}
           >
             {opt.label}
           </button>
         );
       })}
-      {/* Hidden input to integrate with forms */}
       {name ? <input type="hidden" name={name} value={value} readOnly /> : null}
     </div>
   );
 }
-
-
