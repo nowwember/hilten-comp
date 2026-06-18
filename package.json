@@ -12,6 +12,7 @@
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "postinstall": "prisma generate",
     "ingest:fipi": "tsx -r dotenv/config scripts/fipi/ingest.ts",
+    "ingest:fipi:by-task": "tsx scripts/fipi/ingest-by-task.ts",
     "pw:install": "playwright install chromium",
     "fipi:mvp:check": "tsx scripts/fipi/mvp-gate.ts"
   },

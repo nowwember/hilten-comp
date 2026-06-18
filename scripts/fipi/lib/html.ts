@@ -190,6 +190,41 @@ export async function extractRawFromFrame(frame: any): Promise<Array<{ fipiId?: 
   }
 }
 
+// Minimal adapters for ingest-by-task needs
+export async function extractCardsFromFrame(frame: any): Promise<any[]> {
+  try {
+    const html = await frame.content()
+    const { JSDOM } = require('jsdom')
+    const dom = new JSDOM(html)
+    const d = dom.window.document
+    const cards = Array.from(d.querySelectorAll('.question, .task, .b-task, .bank-card, article, .item, .q-item')) as any[]
+    return cards
+  } catch { return [] }
+}
+
+export async function extractRawCardFromFrame2(frame: any, cardEl: any): Promise<{ html: string; text: string; fipiId: string; idSynthetic: boolean; idMethod: string; assets: string[] }> {
+  const html = await frame.evaluate((el: any) => el.outerHTML, cardEl).catch(() => '')
+  const text = await frame.evaluate((el: any) => (el as HTMLElement).innerText || '', cardEl).catch(() => '')
+  const idInfo = getFipiIdFromStrings(html, text)
+  // assets collection from HTML snippet
+  const assets: string[] = []
+  try {
+    const { JSDOM } = require('jsdom')
+    const dom = new JSDOM(html)
+    const imgs = Array.from(dom.window.document.querySelectorAll('img')) as HTMLImageElement[]
+    for (const im of imgs) {
+      const src = im.getAttribute('src') || ''
+      if (!src || src.startsWith('data:') || /loading_spinner\.gif/i.test(src)) continue
+      assets.push(src)
+    }
+  } catch {}
+  return { html: normalizeHtmlForStore(html), text, fipiId: idInfo.id, idSynthetic: idInfo.synthetic, idMethod: idInfo.method, assets }
+}
+
+export function normalizeHtmlForStore(html: string): string {
+  return String(html || '')
+}
+
 export async function extractRawCardFromFrame(frame: any, cardEl: any): Promise<{ html: string; text: string }> {
   try {
     const html = await frame.evaluate((el: any) => el.outerHTML, cardEl)

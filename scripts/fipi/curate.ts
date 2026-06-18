@@ -156,7 +156,8 @@ async function main() {
           createdLabeled++
         }
       } else {
-        const taskNoGuess = 0
+        const taskNoFromRaw = typeof raw.taskNo === 'number' ? raw.taskNo : 0
+        const taskNoGuess = taskNoFromRaw || 0
         const subtopicGuess = 'unknown'
         const outDir = path.join(process.cwd(), 'data', 'fipi', '_review', exam, level, String(taskNoGuess), subtopicGuess)
         ensureDirSync(outDir)
